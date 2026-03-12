@@ -40,6 +40,16 @@ intellijPlatform {
             untilBuild = providers.gradleProperty("untilBuild")
         }
     }
+
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
+
+    pluginVerification {
+        ides {
+            recommended()
+        }
+    }
 }
 
 tasks {

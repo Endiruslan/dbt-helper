@@ -1,10 +1,72 @@
 <idea-plugin>
     <id>com.dbthelper</id>
     <name>dbt Helper</name>
-    <vendor>dbt-helper</vendor>
+    <vendor email="endiruslan@gmail.com" url="https://github.com/Endiruslan/dbt-helper">Endiruslan</vendor>
     <description><![CDATA[
-        dbt Helper provides lineage visualization, code intelligence, and documentation browsing for dbt projects.
+<h2>dbt Helper — Lineage, Code Intelligence & Runner for dbt</h2>
+
+<p>A powerful plugin that brings <b>lineage visualization</b>, <b>code intelligence</b>, and a <b>command runner</b>
+for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBrains IDE.</p>
+
+<h3>Lineage Graph</h3>
+<ul>
+  <li>Interactive DAG visualization powered by Cytoscape.js</li>
+  <li>Click nodes to navigate to source files</li>
+  <li>Expand boundary nodes to explore deeper dependencies</li>
+  <li>Configurable depth, layout direction, and edge style</li>
+  <li>Shows models, sources, seeds, snapshots, exposures, and tests</li>
+  <li>Auto-updates when manifest changes; adapts to light/dark themes</li>
+</ul>
+
+<h3>Code Intelligence</h3>
+<ul>
+  <li><b>Autocompletion</b> — ref(), source(), macro() suggestions with descriptions</li>
+  <li><b>Go to Definition</b> — Ctrl/Cmd+Click on ref() / source() to jump to the file</li>
+  <li><b>Documentation on Hover</b> — columns, materialization, tags, descriptions</li>
+  <li><b>Annotations</b> — unresolved ref() / source() highlighted as warnings</li>
+  <li>Works in .sql, .jinja, and .jinja2 files</li>
+</ul>
+
+<h3>Runner</h3>
+<ul>
+  <li><b>Run / Test / Compile</b> the current model with one click</li>
+  <li><b>Full Refresh</b> checkbox for incremental models</li>
+  <li><b>Preview</b> — execute dbt show on any model or selected SQL</li>
+  <li><b>Docs Generate</b> — rebuild documentation</li>
+  <li>Target selector, stop button, streaming output log</li>
+  <li>Native OS notifications when commands finish</li>
+</ul>
+
+<h3>Copy &amp; Paste</h3>
+<ul>
+  <li><b>Copy for Target DB</b> (Cmd+Shift+C) — ref()/source() replaced by database.schema.table</li>
+  <li><b>Paste as dbt Refs</b> (Cmd+Shift+V) — table names replaced by ref()/source() calls</li>
+</ul>
+
+<h3>Docs Viewer</h3>
+<p>Browse model documentation in a built-in panel — columns, descriptions, tags, and dependencies.</p>
+
+<p><em>This plugin is not affiliated with or endorsed by dbt Labs.</em></p>
     ]]></description>
+
+    <change-notes><![CDATA[
+<h3>0.1.0</h3>
+<ul>
+  <li>Initial release</li>
+  <li>Interactive lineage graph with Cytoscape.js and dagre layout</li>
+  <li>Code intelligence: autocompletion, go-to-definition, annotations, documentation hover</li>
+  <li>Runner tab: run, test, compile models; dbt show preview; docs generate</li>
+  <li>Full-refresh checkbox for incremental models</li>
+  <li>Target selector from profiles.yml</li>
+  <li>Copy for Target DB / Paste as dbt Refs actions</li>
+  <li>Docs viewer tab with column info and descriptions</li>
+  <li>Native OS notifications (macOS Notification Center) when commands finish</li>
+  <li>Manifest date display on Status tab</li>
+  <li>Support for .sql, .jinja, .jinja2 files</li>
+  <li>Light and dark theme support for lineage graph</li>
+  <li>Configurable lineage depth, edge style, layout direction</li>
+</ul>
+    ]]></change-notes>
 
     <depends>com.intellij.modules.platform</depends>
 
