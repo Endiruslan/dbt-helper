@@ -1,0 +1,98 @@
+<idea-plugin>
+    <id>com.dbthelper</id>
+    <name>dbt Helper</name>
+    <vendor>dbt-helper</vendor>
+    <description><![CDATA[
+        dbt Helper provides lineage visualization, code intelligence, and documentation browsing for dbt projects.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <resource-bundle>messages.DbtHelperBundle</resource-bundle>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Project Services -->
+        <projectService serviceImplementation="com.dbthelper.settings.DbtHelperSettings"/>
+        <projectService serviceImplementation="com.dbthelper.core.ManifestService"/>
+        <projectService serviceImplementation="com.dbthelper.core.CatalogParser"/>
+        <projectService serviceImplementation="com.dbthelper.core.ProfilesParser"/>
+
+        <!-- Tool Window -->
+        <toolWindow id="dbt Helper"
+                    anchor="bottom"
+                    sideToolWindow="true"
+                    icon="/icons/dbt.svg"
+                    factoryClass="com.dbthelper.toolwindow.DbtToolWindowFactory"/>
+
+        <!-- Settings -->
+        <projectConfigurable
+                parentId="tools"
+                instance="com.dbthelper.settings.DbtHelperConfigurable"
+                id="com.dbthelper.settings.DbtHelperConfigurable"
+                displayName="dbt Helper"/>
+
+        <!-- Code Intelligence (TEXT = IntelliJ IDEA, Jinja2/SQL = DataSpell/PyCharm) -->
+        <completion.contributor language="any"
+                               implementationClass="com.dbthelper.codeintel.DbtCompletionContributor"/>
+
+        <psi.referenceContributor language="TEXT"
+                                  implementation="com.dbthelper.codeintel.DbtReferenceContributor"/>
+        <psi.referenceContributor language="Jinja2"
+                                  implementation="com.dbthelper.codeintel.DbtReferenceContributor"/>
+        <psi.referenceContributor language="SQL"
+                                  implementation="com.dbthelper.codeintel.DbtReferenceContributor"/>
+
+        <lang.documentationProvider language="TEXT"
+                                    implementationClass="com.dbthelper.codeintel.DbtDocumentationProvider"/>
+        <lang.documentationProvider language="Jinja2"
+                                    implementationClass="com.dbthelper.codeintel.DbtDocumentationProvider"/>
+        <lang.documentationProvider language="SQL"
+                                    implementationClass="com.dbthelper.codeintel.DbtDocumentationProvider"/>
+
+        <annotator language="TEXT"
+                   implementationClass="com.dbthelper.codeintel.DbtAnnotator"/>
+        <annotator language="Jinja2"
+                   implementationClass="com.dbthelper.codeintel.DbtAnnotator"/>
+        <annotator language="SQL"
+                   implementationClass="com.dbthelper.codeintel.DbtAnnotator"/>
+
+        <!-- Notifications -->
+        <notificationGroup id="dbt Helper" displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <action id="dbtHelper.CopyForTarget"
+                class="com.dbthelper.actions.CopyWithRefsReplacedAction"
+                text="Copy for Target DB"
+                description="Copy SQL with ref/source replaced by database.schema.table">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="$Copy"/>
+            <add-to-group group-id="EditMenu" anchor="after" relative-to-action="$Copy"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift C"/>
+            <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta shift C"/>
+        </action>
+        <action id="dbtHelper.PasteAsRefs"
+                class="com.dbthelper.actions.PasteAsRefsAction"
+                text="Paste as dbt Refs"
+                description="Paste SQL with table names replaced by ref/source calls">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="$Paste"/>
+            <add-to-group group-id="EditMenu" anchor="after" relative-to-action="$Paste"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift V"/>
+            <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta shift V"/>
+        </action>
+        <action id="dbtHelper.Preview"
+                class="com.dbthelper.actions.DbtPreviewAction"
+                text="dbt Preview"
+                description="Preview model or selected SQL with dbt show">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="dbtHelper.CopyForTarget"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift R"/>
+            <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta shift R"/>
+        </action>
+    </actions>
+
+    <projectListeners>
+        <listener class="com.dbthelper.listeners.DbtFileListener"
+                  topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+        <listener class="com.dbthelper.listeners.ManifestFileWatcher"
+                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+    </projectListeners>
+</idea-plugin>

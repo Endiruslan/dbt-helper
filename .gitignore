@@ -1,0 +1,19 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ Platform Plugin
+.intellijPlatform/
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/

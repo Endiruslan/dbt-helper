@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dbt Lineage</title>
+    <script src="cytoscape.min.js"></script>
+    <script src="dagre.min.js"></script>
+    <script src="cytoscape-dagre.js"></script>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #ccc;
+            --tooltip-bg: #2d2d2d;
+            --tooltip-border: #555;
+            --tooltip-text: #ddd;
+            --tooltip-name: #fff;
+            --tooltip-detail: #aaa;
+            --btn-bg: #2d2d2d;
+            --btn-border: #555;
+            --btn-text: #ccc;
+            --btn-hover: #3d3d3d;
+            --edge-color: #555;
+            --loading-color: #888;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg-color); color: var(--text-color); }
+        #cy { width: 100%; height: 100%; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #888; font-size: 14px; }
+
+        .tooltip {
+            position: absolute;
+            background: var(--tooltip-bg);
+            border: 1px solid var(--tooltip-border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--tooltip-text);
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            display: none;
+            line-height: 1.4;
+        }
+        .tooltip .tt-name { font-weight: 600; color: var(--tooltip-name); margin-bottom: 4px; }
+        .tooltip .tt-detail { color: var(--tooltip-detail); }
+
+        #controls {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+            z-index: 100;
+        }
+        #controls button {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--btn-border);
+            border-radius: 4px;
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        #controls button:hover { background: var(--btn-hover); }
+
+        #search-box {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 100;
+            display: inline-block;
+        }
+        #search-box input {
+            width: 180px;
+            height: 28px;
+            padding: 0 8px;
+            border: 1px solid var(--btn-border);
+            border-radius: 4px;
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+        }
+        #search-box input { padding-right: 24px; }
+        #search-box input::placeholder { color: var(--tooltip-detail); }
+        #search-box input:focus { border-color: #2196F3; }
+        #search-clear {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border: none;
+            background: none;
+            color: var(--tooltip-detail);
+            font-size: 14px;
+            cursor: pointer;
+            display: none;
+            padding: 0;
+            line-height: 16px;
+            text-align: center;
+        }
+        #search-clear:hover { color: var(--btn-text); }
+    </style>
+</head>
+<body>
+    <div id="cy"></div>
+    <div id="loading" style="color: var(--loading-color)">Waiting for data...</div>
+    <div id="tooltip" class="tooltip"></div>
+    <div id="search-box">
+        <input id="search-input" type="text" placeholder="Search nodes..." />
+        <button id="search-clear" title="Clear">&times;</button>
+    </div>
+    <div id="controls">
+        <button id="zoom-in" title="Zoom in">+</button>
+        <button id="zoom-out" title="Zoom out">−</button>
+        <button id="zoom-fit" title="Fit graph">⊡</button>
+    </div>
+    <script src="lineage.js"></script>
+</body>
+</html>

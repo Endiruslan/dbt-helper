@@ -1,0 +1,16 @@
+[versions]
+kotlin = "2.0.20"
+intellijPlatform = "2.6.0"
+jackson = "2.17.2"
+snakeyaml = "2.3"
+coroutines = "1.8.1"
+
+[libraries]
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+
+[plugins]
+kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+intellijPlatform = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlatform" }
