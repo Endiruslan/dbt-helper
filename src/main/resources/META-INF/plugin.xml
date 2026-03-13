@@ -50,6 +50,16 @@ for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBra
     ]]></description>
 
     <change-notes><![CDATA[
+<h3>0.2.0</h3>
+<ul>
+  <li>Run / Test / Compile buttons in Runner tab for the current model</li>
+  <li>Full-refresh checkbox — automatically shown for incremental models</li>
+  <li>Native OS system notifications when dbt commands finish (configurable in settings)</li>
+  <li>Manifest last updated date on Status tab</li>
+  <li>Plugin icon for Settings → Plugins list (40x40 with transparent center)</li>
+  <li>New setting: "Send system notifications" toggle</li>
+</ul>
+
 <h3>0.1.0</h3>
 <ul>
   <li>Initial release</li>
