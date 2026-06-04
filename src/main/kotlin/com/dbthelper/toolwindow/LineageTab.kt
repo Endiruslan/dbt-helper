@@ -27,6 +27,7 @@ import com.intellij.ide.ui.LafManagerListener
 import org.cef.browser.CefBrowser
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.BorderLayout
+import java.util.Base64
 import javax.swing.JPanel
 import javax.swing.UIManager
 
@@ -49,6 +50,9 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
     // Expanded boundary nodes (not persisted to settings)
     private val expandedBoundaryNodes = mutableSetOf<String>()
 
+    @Volatile
+    private var lastDocsSidebarNodeId: String? = null
+
     init {
         Disposer.register(parentDisposable, this)
 
@@ -65,6 +69,7 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
             override fun onManifestUpdated(index: ManifestIndex) {
                 resolveCurrentModel()
                 refreshGraph()
+                currentModelId?.let { pushDocsToSidebar(it, force = true) }
                 pushRegenerateAttention()
             }
         })
@@ -106,6 +111,7 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
                     "ready" -> {
                         isPageReady = true
                         refreshGraph()
+                        currentModelId?.let { pushDocsToSidebar(it) }
                     }
                     "nodeClick" -> {
                         val nodeId = payload.path("nodeId").asText()
@@ -151,6 +157,7 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
 
                     resolveCurrentModel()
                     refreshGraph()
+                    currentModelId?.let { pushDocsToSidebar(it) }
                     pushRegenerateAttention()
                 }
             }
@@ -216,6 +223,7 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
                 currentModelId = modelId
                 expandedBoundaryNodes.clear()
                 refreshGraph()
+                pushDocsToSidebar(modelId)
             }
         } else if (modelId != null && modelId == currentModelId) {
             ApplicationManager.getApplication().invokeLater {
@@ -247,18 +255,14 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
                 ).copy(edgeCurveStyle = settings.state.edgeCurveStyle, layoutDirection = settings.state.layoutDirection)
 
                 val graphJson = mapper.writeValueAsString(graph)
-                val escaped = graphJson.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
 
                 ApplicationManager.getApplication().invokeLater {
-                    if (!isDisposed) executeJs("renderGraph('$escaped')")
+                    if (!isDisposed) deliverJsonToJs("renderGraph", graphJson)
                 }
             } catch (e: Exception) {
                 logger.warn("Error building lineage graph", e)
             }
         }
-
-        // Update sidebar to reflect current model
-        pushDocsToSidebar(modelId)
     }
 
     private fun applyCurrentTheme() {
@@ -299,18 +303,22 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
         }
     }
 
-    private fun pushDocsToSidebar(nodeId: String) {
+    private fun pushDocsToSidebar(nodeId: String, force: Boolean = false) {
         if (isDisposed) return
+        if (!force && nodeId == lastDocsSidebarNodeId) return
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 if (isDisposed) return@executeOnPooledThread
                 val service = ManifestService.getInstance(project)
                 val index = service.getIndex()
-                val payload = DocsPayloadBuilder.build(nodeId, index) ?: return@executeOnPooledThread
+                val sql = service.getNodeSql(nodeId)
+                val payload = DocsPayloadBuilder.build(nodeId, index, sql) ?: return@executeOnPooledThread
                 val json = mapper.writeValueAsString(payload)
-                val escaped = json.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
                 ApplicationManager.getApplication().invokeLater {
-                    if (!isDisposed) executeJs("showDocs('$escaped')")
+                    if (!isDisposed) {
+                        deliverJsonToJs("showDocs", json)
+                        lastDocsSidebarNodeId = nodeId
+                    }
                 }
             } catch (e: Exception) {
                 logger.warn("Error building docs payload", e)
@@ -366,6 +374,12 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
         if (!isDisposed) {
             browser.cefBrowser.executeJavaScript(code, browser.cefBrowser.url, 0)
         }
+    }
+
+    /** Passes UTF-8 JSON via base64 (safe in JS string literals; no manual escape of graph/docs payloads). */
+    private fun deliverJsonToJs(functionName: String, json: String) {
+        val b64 = Base64.getEncoder().encodeToString(json.toByteArray(Charsets.UTF_8))
+        executeJs("window.__dbtJsonDeliver('$functionName','$b64')")
     }
 
     private fun escapeJs(s: String): String = s.replace("\\", "\\\\").replace("'", "\\'")

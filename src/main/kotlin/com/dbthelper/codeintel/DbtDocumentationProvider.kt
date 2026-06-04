@@ -43,10 +43,10 @@ class DbtDocumentationProvider : AbstractDocumentationProvider() {
     private fun findSourceFromContext(originalElement: PsiElement?, index: ManifestIndex): DbtSource? {
         if (originalElement == null) return null
         val file = originalElement.containingFile ?: return null
-        val text = file.text
         val offset = originalElement.textRange.startOffset
+        val sources = file.getDbtJinjaPatterns().sources
 
-        for (src in DbtJinjaUtils.findSourceCalls(text)) {
+        for (src in sources) {
             if (offset in src.sourceNameRange || offset in src.tableNameRange) {
                 return index.sources.values.firstOrNull {
                     it.sourceName == src.sourceName && it.name == src.tableName
@@ -55,7 +55,7 @@ class DbtDocumentationProvider : AbstractDocumentationProvider() {
         }
 
         if (offset == 0) {
-            val firstSource = DbtJinjaUtils.findSourceCalls(text).firstOrNull()
+            val firstSource = sources.firstOrNull()
             if (firstSource != null) {
                 return index.sources.values.firstOrNull {
                     it.sourceName == firstSource.sourceName && it.name == firstSource.tableName

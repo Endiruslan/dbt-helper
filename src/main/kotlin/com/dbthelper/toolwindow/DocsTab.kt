@@ -132,7 +132,10 @@ class DocsTab(
         }
 
         val node = index.nodes[modelId]
-        if (node != null) return buildNodeDocsHtml(node, index)
+        if (node != null) {
+            val sql = ManifestService.getInstance(project).getNodeSql(node.uniqueId)
+            return buildNodeDocsHtml(node, index, sql)
+        }
 
         val source = index.sources[modelId]
         if (source != null) return buildSourceDocsHtml(source, index)
@@ -140,7 +143,7 @@ class DocsTab(
         return wrapHtml("<p class='empty'>Model not found in manifest: ${esc(modelId)}</p>")
     }
 
-    private fun buildNodeDocsHtml(node: DbtNode, index: ManifestIndex): String = buildString {
+    private fun buildNodeDocsHtml(node: DbtNode, index: ManifestIndex, sql: NodeSql): String = buildString {
         val showCompiled = DbtHelperSettings.getInstance(project).state.showCompiledCode
 
         append("<div class='doc-container'>")
@@ -220,10 +223,10 @@ class DocsTab(
             append("</tbody></table></div>")
         }
 
-        // SQL Code with toggle
-        val rawCode = node.rawCode
-        val compiledCode = node.compiledCode
-        if (rawCode != null || compiledCode != null) {
+        // SQL Code with toggle (loaded on demand from manifest.json)
+        val rawCode = sql.raw
+        val compiledCode = sql.compiled
+        if (sql.hasAny) {
             append("<div class='section'>")
             append("<div class='code-header'>")
             append("<h3>SQL</h3>")

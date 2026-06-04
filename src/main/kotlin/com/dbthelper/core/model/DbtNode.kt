@@ -14,8 +14,6 @@ data class DbtNode(
     val dependsOnNodes: List<String> = emptyList(),
     val dependsOnMacros: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
-    val rawCode: String? = null,
-    val compiledCode: String? = null,
     val config: Map<String, Any?> = emptyMap(),
     val fqn: List<String> = emptyList(),
     val patchPath: String? = null

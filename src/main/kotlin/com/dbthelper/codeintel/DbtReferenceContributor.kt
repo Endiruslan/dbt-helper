@@ -5,8 +5,6 @@ import com.dbthelper.core.ManifestService
 import com.intellij.openapi.util.TextRange
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.psi.*
-import com.intellij.psi.util.CachedValueProvider
-import com.intellij.psi.util.CachedValuesManager
 import com.intellij.util.ProcessingContext
 
 class DbtReferenceContributor : PsiReferenceContributor() {
@@ -15,29 +13,13 @@ class DbtReferenceContributor : PsiReferenceContributor() {
     }
 }
 
-private data class CachedPatterns(
-    val refs: List<DbtJinjaUtils.RefCall>,
-    val sources: List<DbtJinjaUtils.SourceCall>,
-    val macros: List<DbtJinjaUtils.MacroCall>
-)
-
 private class DbtReferenceProvider : PsiReferenceProvider() {
     override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
         val file = element.containingFile ?: return PsiReference.EMPTY_ARRAY
         val vFile = file.virtualFile ?: return PsiReference.EMPTY_ARRAY
         if (!isDbtTemplateFile(vFile.name)) return PsiReference.EMPTY_ARRAY
 
-        val patterns = CachedValuesManager.getCachedValue(file) {
-            val text = file.text
-            CachedValueProvider.Result.create(
-                CachedPatterns(
-                    DbtJinjaUtils.findRefCalls(text),
-                    DbtJinjaUtils.findSourceCalls(text),
-                    DbtJinjaUtils.findMacroCalls(text)
-                ),
-                file
-            )
-        }
+        val patterns = file.getDbtJinjaPatterns()
 
         val elemRange = element.textRange
         val references = mutableListOf<PsiReference>()
@@ -86,8 +68,7 @@ private class DbtModelReference(
         val service = ManifestService.getInstance(project)
         val index = service.getIndex()
         val dbtRoot = service.getLocator().findProjectRoot() ?: return null
-        val node = index.nodes.values.firstOrNull { (it.name == modelName || it.alias == modelName) && it.resourceType != "test" }
-            ?: return null
+        val node = index.findModelByNameOrAlias(modelName) ?: return null
         return DbtUtils.resolveFile(project, dbtRoot.path, node.originalFilePath)
     }
 }
@@ -103,9 +84,7 @@ private class DbtSourceReference(
         val service = ManifestService.getInstance(project)
         val index = service.getIndex()
         val dbtRoot = service.getLocator().findProjectRoot() ?: return null
-        val source = index.sources.values.firstOrNull {
-            it.sourceName == sourceName && it.name == tableName
-        } ?: return null
+        val source = index.findSource(sourceName, tableName) ?: return null
         return DbtUtils.resolveFile(project, dbtRoot.path, source.originalFilePath)
     }
 }
@@ -120,7 +99,7 @@ private class DbtMacroReference(
         val service = ManifestService.getInstance(project)
         val index = service.getIndex()
         val dbtRoot = service.getLocator().findProjectRoot() ?: return null
-        val macro = index.macros.values.firstOrNull { it.name == macroName } ?: return null
+        val macro = index.findMacroByName(macroName) ?: return null
         return DbtUtils.resolveFile(project, dbtRoot.path, macro.originalFilePath)
     }
 }

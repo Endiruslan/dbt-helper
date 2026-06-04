@@ -2,6 +2,7 @@ package com.dbthelper.core
 
 import com.dbthelper.settings.DbtHelperSettings
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
@@ -95,5 +96,6 @@ class DbtProjectLocator(private val project: Project) {
 
     fun invalidateCache() {
         cachedDbtRoots = emptyList()
+        project.service<CatalogParser>().invalidateCache()
     }
 }

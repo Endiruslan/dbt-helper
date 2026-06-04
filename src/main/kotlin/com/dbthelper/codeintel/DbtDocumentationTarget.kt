@@ -26,9 +26,9 @@ class DbtDocumentationTargetProvider : DocumentationTargetProvider {
         val index = ManifestService.getInstance(project).getIndex()
         if (index === ManifestIndex.EMPTY) return emptyList()
 
-        val text = file.text
+        val patterns = file.getDbtJinjaPatterns()
 
-        for (ref in DbtJinjaUtils.findRefCalls(text)) {
+        for (ref in patterns.refs) {
             if (offset in ref.nameRange) {
                 val node = index.nodes.values.firstOrNull {
                     (it.name == ref.modelName || it.alias == ref.modelName) && it.resourceType != "test"
@@ -37,7 +37,7 @@ class DbtDocumentationTargetProvider : DocumentationTargetProvider {
             }
         }
 
-        for (src in DbtJinjaUtils.findSourceCalls(text)) {
+        for (src in patterns.sources) {
             if (offset in src.tableNameRange || offset in src.sourceNameRange) {
                 val source = index.sources.values.firstOrNull {
                     it.sourceName == src.sourceName && it.name == src.tableName
@@ -46,7 +46,7 @@ class DbtDocumentationTargetProvider : DocumentationTargetProvider {
             }
         }
 
-        for (macro in DbtJinjaUtils.findMacroCalls(text)) {
+        for (macro in patterns.macros) {
             if (offset in macro.nameRange) {
                 val m = index.macros.values.firstOrNull { it.name == macro.macroName } ?: continue
                 return listOf(DbtDocumentationTarget(project, DocKind.Macro(m.uniqueId), m.name))
@@ -73,10 +73,10 @@ class DbtPsiDocumentationTargetProvider : PsiDocumentationTargetProvider {
         val index = service.getIndex()
         if (index === ManifestIndex.EMPTY) return null
 
-        val text = file.text
+        val patterns = file.getDbtJinjaPatterns()
         val offset = context.textRange.startOffset
 
-        for (ref in DbtJinjaUtils.findRefCalls(text)) {
+        for (ref in patterns.refs) {
             if (offset in ref.nameRange) {
                 val node = index.nodes.values.firstOrNull {
                     (it.name == ref.modelName || it.alias == ref.modelName) && it.resourceType != "test"
@@ -85,7 +85,7 @@ class DbtPsiDocumentationTargetProvider : PsiDocumentationTargetProvider {
             }
         }
 
-        for (src in DbtJinjaUtils.findSourceCalls(text)) {
+        for (src in patterns.sources) {
             if (offset in src.tableNameRange || offset in src.sourceNameRange) {
                 val source = index.sources.values.firstOrNull {
                     it.sourceName == src.sourceName && it.name == src.tableName
@@ -94,7 +94,7 @@ class DbtPsiDocumentationTargetProvider : PsiDocumentationTargetProvider {
             }
         }
 
-        for (macro in DbtJinjaUtils.findMacroCalls(text)) {
+        for (macro in patterns.macros) {
             if (offset in macro.nameRange) {
                 val m = index.macros.values.firstOrNull { it.name == macro.macroName } ?: continue
                 return DbtDocumentationTarget(project, DocKind.Macro(m.uniqueId), m.name)

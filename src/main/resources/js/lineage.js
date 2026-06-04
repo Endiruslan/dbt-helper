@@ -52,9 +52,12 @@
     let cy = null;
     let lastCurrentNodeId = null;
     let currentLayoutDir = 'LR';
+    let lastEdgeCurveStyle = null;
     let previousNodeIds = new Set();
     let nodeCards = {};
     let activeDrag = null;
+    let cyEventsBound = false;
+    let cyInteractionsBound = false;
 
     window.addEventListener('mousemove', function (e) {
         if (!activeDrag || !cy) return;
@@ -246,163 +249,60 @@
         });
     }
 
-    function initCytoscape(elements, currentNodeId, edgeCurveStyle, layoutDirection) {
-        currentLayoutDir = layoutDirection || 'LR';
-        // Save viewport if re-rendering
-        var savedZoom = null;
-        var savedPan = null;
-        var isRerender = cy && lastCurrentNodeId === currentNodeId;
-        if (isRerender) {
-            savedZoom = cy.zoom();
-            savedPan = cy.pan();
+    function buildCyStyles(edgeCurveStyle) {
+        var cs = edgeCurveStyle || 'bezier';
+        var edgeStyle = {
+            'width': 1.5,
+            'line-color': '#999',
+            'target-arrow-color': '#999',
+            'target-arrow-shape': 'triangle',
+            'curve-style': cs,
+            'arrow-scale': 0.8
+        };
+        if (cs === 'taxi' || cs === 'round-taxi') {
+            edgeStyle['taxi-turn'] = 'data(taxiTurn)';
+            edgeStyle['taxi-turn-min-distance'] = 0;
+            edgeStyle['taxi-direction'] = 'auto';
         }
-        if (cy) {
-            previousNodeIds = new Set();
-            cy.nodes().forEach(function (n) { previousNodeIds.add(n.id()); });
-            cy.destroy();
-        }
-        lastCurrentNodeId = currentNodeId;
-        loadingEl.style.display = 'none';
-
-        cy = cytoscape({
-            container: document.getElementById('cy'),
-            elements: elements,
-            layout: {
-                name: 'dagre',
-                rankDir: layoutDirection || 'LR',
-                nodeSep: 40,
-                rankSep: 80,
-                edgeSep: 20,
-                animate: false,
-                fit: false
+        return [
+            {
+                selector: 'node',
+                style: {
+                    'label': '',
+                    'background-opacity': 0,
+                    'border-width': 0,
+                    'width': 'data(w)',
+                    'height': 'data(h)',
+                    'shape': 'round-rectangle'
+                }
             },
-            style: [
-                {
-                    selector: 'node',
-                    style: {
-                        // Native rendering hidden — HTML overlay does the drawing.
-                        'label': '',
-                        'background-opacity': 0,
-                        'border-width': 0,
-                        'width': 'data(w)',
-                        'height': 'data(h)',
-                        'shape': 'round-rectangle'
-                    }
-                },
-                (function () {
-                    var style = {
-                        'width': 1.5,
-                        'line-color': '#999',
-                        'target-arrow-color': '#999',
-                        'target-arrow-shape': 'triangle',
-                        'curve-style': edgeCurveStyle || 'bezier',
-                        'arrow-scale': 0.8
-                    };
-                    var cs = edgeCurveStyle || 'bezier';
-                    if (cs === 'taxi' || cs === 'round-taxi') {
-                        style['taxi-turn'] = 'data(taxiTurn)';
-                        style['taxi-turn-min-distance'] = 0;
-                        style['taxi-direction'] = 'auto';
-                    }
-                    return { selector: 'edge', style: style };
-                })(),
-                {
-                    selector: 'node.dimmed',
-                    style: { 'opacity': 0.25 }
-                },
-                {
-                    selector: 'edge.dimmed',
-                    style: { 'opacity': 0.15 }
-                },
-                {
-                    selector: 'edge.stub-edge',
-                    style: {
-                        'width': 1,
-                        'line-style': 'dashed',
-                        'line-color': '#aaa',
-                        'target-arrow-color': '#aaa'
-                    }
+            { selector: 'edge', style: edgeStyle },
+            { selector: 'node.dimmed', style: { 'opacity': 0.25 } },
+            { selector: 'edge.dimmed', style: { 'opacity': 0.15 } },
+            {
+                selector: 'edge.stub-edge',
+                style: {
+                    'width': 1,
+                    'line-style': 'dashed',
+                    'line-color': '#aaa',
+                    'target-arrow-color': '#aaa'
                 }
-            ],
-            minZoom: 0.2,
-            maxZoom: 3,
-            zoomingEnabled: true,
-            userZoomingEnabled: false
-        });
-
-        // Node click
-        cy.on('tap', 'node', function (evt) {
-            const data = evt.target.data();
-            if (data.resourceType === 'stub') {
-                sendToKotlin('expandRequest', { direction: data.stubDirection, boundaryNodeId: data.boundaryNodeId });
-            } else {
-                sendToKotlin('nodeClick', { nodeId: data.id, resourceType: data.resourceType });
             }
-        });
+        ];
+    }
 
-        // Hover tooltip
-        cy.on('mouseover', 'node', function (evt) {
-            const data = evt.target.data();
-            showTooltip(evt.renderedPosition, data);
-        });
+    function applyZoom(factor, x, y) {
+        if (!cy) return;
+        var zoom = cy.zoom() * factor;
+        zoom = Math.max(cy.minZoom(), Math.min(cy.maxZoom(), zoom));
+        cy.zoom({ level: zoom, renderedPosition: { x: x, y: y } });
+    }
 
-        cy.on('mouseout', 'node', function () {
-            hideTooltip();
-        });
+    function bindCyInteractionsOnce() {
+        if (cyInteractionsBound) return;
+        cyInteractionsBound = true;
 
-        cy.on('mousemove', 'node', function (evt) {
-            moveTooltip(evt.renderedPosition);
-        });
-
-        // Build HTML cards over cytoscape
-        buildNodeCards();
-        cy.on('pan zoom position layoutstop', syncNodeCards);
-
-        // Restore viewport or center on current node
-        if (isRerender && savedZoom && savedPan) {
-            cy.zoom(savedZoom);
-            cy.pan(savedPan);
-        } else {
-            // First render — fit graph, then center on current node
-            cy.fit(undefined, 30);
-            var currentNode = cy.getElementById(currentNodeId);
-            if (currentNode.length) {
-                cy.center(currentNode);
-            }
-        }
-
-        // Fade in new nodes and edges
-        if (isRerender && previousNodeIds.size > 0) {
-            cy.nodes().forEach(function (node) {
-                if (!previousNodeIds.has(node.id())) {
-                    node.style('opacity', 0);
-                    node.animate({ style: { opacity: 1 } }, { duration: 300, complete: function () {
-                        node.removeStyle('opacity');
-                    }});
-                }
-            });
-            cy.edges().forEach(function (edge) {
-                var srcNew = !previousNodeIds.has(edge.source().id());
-                var tgtNew = !previousNodeIds.has(edge.target().id());
-                if (srcNew || tgtNew) {
-                    edge.style('opacity', 0);
-                    edge.animate({ style: { opacity: 1 } }, { duration: 300, complete: function () {
-                        edge.removeStyle('opacity');
-                    }});
-                }
-            });
-        }
-
-        // Manual wheel/pinch zoom for JCEF trackpad compatibility
         var cyContainer = document.getElementById('cy');
-
-        function applyZoom(factor, x, y) {
-            var zoom = cy.zoom() * factor;
-            zoom = Math.max(cy.minZoom(), Math.min(cy.maxZoom(), zoom));
-            cy.zoom({ level: zoom, renderedPosition: { x: x, y: y } });
-        }
-
-        // Wheel event — handles scroll and ctrl+scroll (pinch on some systems)
         cyContainer.addEventListener('wheel', function (e) {
             if (!cy) return;
             e.preventDefault();
@@ -411,7 +311,6 @@
             applyZoom(1 - delta * sensitivity, e.offsetX, e.offsetY);
         }, { passive: false });
 
-        // Zoom control buttons — 5% step
         document.getElementById('zoom-in').addEventListener('click', function () {
             if (!cy) return;
             applyZoom(1.02, cy.width() / 2, cy.height() / 2);
@@ -425,7 +324,6 @@
             cy.fit(undefined, 30);
         });
 
-        // Keyboard zoom: +/- and =/- keys (skip when typing in search)
         document.addEventListener('keydown', function (e) {
             if (!cy) return;
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -441,6 +339,245 @@
                 e.preventDefault();
                 cy.fit(undefined, 30);
             }
+        });
+    }
+
+    function bindCyEventsOnce() {
+        if (cyEventsBound || !cy) return;
+        cyEventsBound = true;
+
+        cy.on('tap', 'node', function (evt) {
+            const data = evt.target.data();
+            if (data.resourceType === 'stub') {
+                sendToKotlin('expandRequest', { direction: data.stubDirection, boundaryNodeId: data.boundaryNodeId });
+            } else {
+                sendToKotlin('nodeClick', { nodeId: data.id, resourceType: data.resourceType });
+            }
+        });
+
+        cy.on('mouseover', 'node', function (evt) {
+            showTooltip(evt.renderedPosition, evt.target.data());
+        });
+        cy.on('mouseout', 'node', function () {
+            hideTooltip();
+        });
+        cy.on('mousemove', 'node', function (evt) {
+            moveTooltip(evt.renderedPosition);
+        });
+        cy.on('pan zoom position layoutstop', syncNodeCards);
+    }
+
+    function ensureCy(edgeCurveStyle) {
+        if (cy) return;
+        loadingEl.style.display = 'none';
+        cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: [],
+            layout: false,
+            style: buildCyStyles(edgeCurveStyle),
+            minZoom: 0.2,
+            maxZoom: 3,
+            zoomingEnabled: true,
+            userZoomingEnabled: false
+        });
+        bindCyEventsOnce();
+        bindCyInteractionsOnce();
+        lastEdgeCurveStyle = edgeCurveStyle;
+    }
+
+    function updateEdgeCurveStyle(edgeCurveStyle) {
+        if (!cy) return;
+        var cs = edgeCurveStyle || 'bezier';
+        var edgeStyle = {
+            'width': 1.5,
+            'line-color': '#999',
+            'target-arrow-color': '#999',
+            'target-arrow-shape': 'triangle',
+            'curve-style': cs,
+            'arrow-scale': 0.8
+        };
+        if (cs === 'taxi' || cs === 'round-taxi') {
+            edgeStyle['taxi-turn'] = 'data(taxiTurn)';
+            edgeStyle['taxi-turn-min-distance'] = 0;
+            edgeStyle['taxi-direction'] = 'auto';
+        }
+        cy.style().selector('edge').style(edgeStyle).update();
+    }
+
+    function runDagreLayout(layoutDirection, onDone) {
+        var layout = cy.layout({
+            name: 'dagre',
+            rankDir: layoutDirection || 'LR',
+            nodeSep: 40,
+            rankSep: 80,
+            edgeSep: 20,
+            animate: false,
+            fit: false
+        });
+        if (onDone) {
+            cy.one('layoutstop', onDone);
+        }
+        layout.run();
+    }
+
+    function splitElements(elements) {
+        var nodes = [];
+        var edges = [];
+        for (var i = 0; i < elements.length; i++) {
+            var el = elements[i];
+            if (el.data && el.data.source) {
+                edges.push(el);
+            } else {
+                nodes.push(el);
+            }
+        }
+        return { nodes: nodes, edges: edges };
+    }
+
+    function setsDiffer(prev, next) {
+        if (prev.size !== next.size) return true;
+        var it = next.values();
+        var step = it.next();
+        while (!step.done) {
+            if (!prev.has(step.value)) return true;
+            step = it.next();
+        }
+        return false;
+    }
+
+    function updateCurrentHighlight(currentNodeId) {
+        if (!cy) return;
+        cy.nodes().forEach(function (node) {
+            var isCur = node.id() === currentNodeId;
+            node.data('isCurrent', isCur);
+            var card = nodeCards[node.id()];
+            if (card) {
+                if (isCur) card.classList.add('selected');
+                else card.classList.remove('selected');
+            }
+        });
+    }
+
+    function animateNewElements(prevNodeIds) {
+        if (!cy || !prevNodeIds || prevNodeIds.size === 0) return;
+        cy.nodes().forEach(function (node) {
+            if (!prevNodeIds.has(node.id())) {
+                node.style('opacity', 0);
+                node.animate({ style: { opacity: 1 } }, {
+                    duration: 300,
+                    complete: function () { node.removeStyle('opacity'); }
+                });
+            }
+        });
+        cy.edges().forEach(function (edge) {
+            var srcNew = !prevNodeIds.has(edge.source().id());
+            var tgtNew = !prevNodeIds.has(edge.target().id());
+            if (srcNew || tgtNew) {
+                edge.style('opacity', 0);
+                edge.animate({ style: { opacity: 1 } }, {
+                    duration: 300,
+                    complete: function () { edge.removeStyle('opacity'); }
+                });
+            }
+        });
+    }
+
+    function applyGraphUpdate(elements, currentNodeId, edgeCurveStyle, layoutDirection) {
+        var layoutDir = layoutDirection || 'LR';
+        var curveStyle = edgeCurveStyle || 'bezier';
+
+        if (!cy) {
+            ensureCy(curveStyle);
+            previousNodeIds = new Set();
+            cy.add(elements);
+            lastCurrentNodeId = currentNodeId;
+            currentLayoutDir = layoutDir;
+            runDagreLayout(layoutDir, function () {
+                buildNodeCards();
+                cy.fit(undefined, 30);
+                var currentNode = cy.getElementById(currentNodeId);
+                if (currentNode.length) cy.center(currentNode);
+            });
+            return;
+        }
+
+        var savedZoom = cy.zoom();
+        var savedPan = cy.pan();
+        var sameFocus = lastCurrentNodeId === currentNodeId;
+        var layoutDirChanged = currentLayoutDir !== layoutDir;
+        var curveChanged = lastEdgeCurveStyle !== curveStyle;
+        currentLayoutDir = layoutDir;
+        lastEdgeCurveStyle = curveStyle;
+
+        var split = splitElements(elements);
+        var newNodeIds = new Set(split.nodes.map(function (n) { return n.data.id; }));
+        var newEdgeIds = new Set(split.edges.map(function (e) { return e.data.id; }));
+
+        var prevNodeIds = new Set();
+        cy.nodes().forEach(function (n) { prevNodeIds.add(n.id()); });
+        var prevEdgeIds = new Set();
+        cy.edges().forEach(function (e) { prevEdgeIds.add(e.id()); });
+
+        var topologyChanged = layoutDirChanged ||
+            setsDiffer(prevNodeIds, newNodeIds) ||
+            setsDiffer(prevEdgeIds, newEdgeIds);
+
+        if (curveChanged) {
+            updateEdgeCurveStyle(curveStyle);
+        }
+
+        if (!topologyChanged) {
+            cy.batch(function () {
+                split.nodes.forEach(function (el) {
+                    var node = cy.getElementById(el.data.id);
+                    if (node.length) node.data(el.data);
+                });
+            });
+            updateCurrentHighlight(currentNodeId);
+            lastCurrentNodeId = currentNodeId;
+            syncNodeCards();
+            return;
+        }
+
+        previousNodeIds = prevNodeIds;
+
+        cy.batch(function () {
+            cy.nodes().forEach(function (n) {
+                if (!newNodeIds.has(n.id())) n.remove();
+            });
+            cy.edges().forEach(function (e) {
+                if (!newEdgeIds.has(e.id())) e.remove();
+            });
+            split.nodes.forEach(function (el) {
+                var existing = cy.getElementById(el.data.id);
+                if (existing.length) existing.data(el.data);
+                else cy.add(el);
+            });
+            split.edges.forEach(function (el) {
+                if (!cy.getElementById(el.data.id).length) cy.add(el);
+            });
+        });
+
+        Object.keys(nodeCards).forEach(function (id) {
+            if (!newNodeIds.has(id)) {
+                var card = nodeCards[id];
+                if (card && card.parentNode) card.parentNode.removeChild(card);
+                delete nodeCards[id];
+            }
+        });
+
+        lastCurrentNodeId = currentNodeId;
+
+        runDagreLayout(layoutDir, function () {
+            buildNodeCards();
+            if (sameFocus) {
+                cy.zoom(savedZoom);
+                cy.pan(savedPan);
+            } else {
+                var currentNode = cy.getElementById(currentNodeId);
+                if (currentNode.length) cy.center(currentNode);
+            }
+            animateNewElements(previousNodeIds);
         });
     }
 
@@ -474,6 +611,22 @@
     }
 
     // === Public API (called from Kotlin) ===
+
+    function decodeBase64Utf8(b64) {
+        var binary = atob(b64);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder('utf-8').decode(bytes);
+    }
+
+    /** Large payloads from Kotlin (base64 UTF-8 JSON — avoids escaping huge strings in executeJavaScript). */
+    window.__dbtJsonDeliver = function (fn, b64) {
+        var data = JSON.parse(decodeBase64Utf8(b64));
+        if (fn === 'renderGraph') window.renderGraph(data);
+        else if (fn === 'showDocs') window.showDocs(data);
+    };
 
     window.renderGraph = function (jsonStr) {
         try {
@@ -548,7 +701,7 @@
                 });
             }
 
-            initCytoscape(elements, graph.currentNodeId, graph.edgeCurveStyle, graph.layoutDirection);
+            applyGraphUpdate(elements, graph.currentNodeId, graph.edgeCurveStyle, graph.layoutDirection);
         } catch (e) {
             console.error('renderGraph error:', e);
         }

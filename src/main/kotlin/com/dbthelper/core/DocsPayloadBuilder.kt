@@ -3,18 +3,19 @@ package com.dbthelper.core
 import com.dbthelper.core.model.DbtNode
 import com.dbthelper.core.model.DbtSource
 import com.dbthelper.core.model.ManifestIndex
+import com.dbthelper.core.model.NodeSql
 
 object DocsPayloadBuilder {
 
-    fun build(nodeId: String, index: ManifestIndex): Map<String, Any?>? {
+    fun build(nodeId: String, index: ManifestIndex, sql: NodeSql = NodeSql.EMPTY): Map<String, Any?>? {
         val node = index.nodes[nodeId]
-        if (node != null) return buildNode(node, index)
+        if (node != null) return buildNode(node, index, sql)
         val source = index.sources[nodeId]
         if (source != null) return buildSource(source, index)
         return null
     }
 
-    private fun buildNode(node: DbtNode, index: ManifestIndex): Map<String, Any?> {
+    private fun buildNode(node: DbtNode, index: ManifestIndex, sql: NodeSql): Map<String, Any?> {
         val mat = (node.config["materialized"] as? String)?.lowercase()
         val incremental = mat == "incremental"
         val tests = findTestsForNode(node.uniqueId, index)
@@ -46,8 +47,8 @@ object DocsPayloadBuilder {
                 )
             },
             "sql" to mapOf(
-                "raw" to (node.rawCode ?: ""),
-                "compiled" to (node.compiledCode ?: "")
+                "raw" to (sql.raw ?: ""),
+                "compiled" to (sql.compiled ?: "")
             ),
             "metadata" to mapOf(
                 "filePath" to node.originalFilePath,

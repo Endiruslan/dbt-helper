@@ -55,9 +55,6 @@ class DbtToolWindowPanel(
             }
         })
 
-        val manifestService = ManifestService.getInstance(project)
-        manifestService.reparse()
-
         ApplicationManager.getApplication().invokeLater { refreshPanel() }
 
         // Load dbt version in background

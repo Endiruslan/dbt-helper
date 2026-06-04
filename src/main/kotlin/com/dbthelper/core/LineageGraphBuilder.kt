@@ -13,7 +13,7 @@ class LineageGraphBuilder(private val index: ManifestIndex) {
         expandedBoundaryNodes: Set<String> = emptySet()
     ): LineageGraph {
         val visitedNodes = mutableMapOf<String, Int>() // id -> depth
-        val edges = mutableListOf<LineageEdge>()
+        val edges = LinkedHashSet<LineageEdge>()
 
         // BFS upstream (negative depth)
         val upstreamResult = bfs(
@@ -112,7 +112,8 @@ class LineageGraphBuilder(private val index: ManifestIndex) {
 
         // Filter edges — only keep edges where both endpoints are in the graph
         val nodeIds = lineageNodes.map { it.id }.toSet()
-        val validEdges = edges.distinct().filter { it.fromNodeId in nodeIds && it.toNodeId in nodeIds } + stubEdges
+        stubEdges.forEach { edges.add(it) }
+        val validEdges = edges.filter { it.fromNodeId in nodeIds && it.toNodeId in nodeIds }
 
         return LineageGraph(
             currentNodeId = currentNodeId,
@@ -130,7 +131,7 @@ class LineageGraphBuilder(private val index: ManifestIndex) {
         maxDepth: Int,
         direction: Direction,
         visitedNodes: MutableMap<String, Int>,
-        edges: MutableList<LineageEdge>
+        edges: MutableSet<LineageEdge>
     ): BfsResult {
         val queue = LinkedList<Pair<String, Int>>() // (nodeId, currentDepth)
         val visited = mutableSetOf(startId)
@@ -189,15 +190,16 @@ class LineageGraphBuilder(private val index: ManifestIndex) {
     }
 
     private fun addEdge(
-        edges: MutableList<LineageEdge>,
+        edges: MutableSet<LineageEdge>,
         fromId: String,
         toId: String,
         direction: Direction
     ) {
-        when (direction) {
-            Direction.UPSTREAM -> edges.add(LineageEdge(fromNodeId = toId, toNodeId = fromId))
-            Direction.DOWNSTREAM -> edges.add(LineageEdge(fromNodeId = fromId, toNodeId = toId))
+        val edge = when (direction) {
+            Direction.UPSTREAM -> LineageEdge(fromNodeId = toId, toNodeId = fromId)
+            Direction.DOWNSTREAM -> LineageEdge(fromNodeId = fromId, toNodeId = toId)
         }
+        edges.add(edge)
     }
 
     private fun toLineageNode(id: String, depth: Int, isCurrent: Boolean): LineageNode? {
