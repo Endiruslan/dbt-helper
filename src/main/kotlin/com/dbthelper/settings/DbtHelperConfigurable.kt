@@ -107,6 +107,11 @@ class DbtHelperConfigurable(private val project: Project) : BoundConfigurable("d
                     .bindSelected(settings.state::enableSystemNotifications)
                     .comment("Send native OS notifications (macOS Notification Center) when dbt commands finish")
             }
+            row {
+                checkBox("Colored dbt output")
+                    .bindSelected(settings.state::enableColoredOutput)
+                    .comment("Pass --use-colors to dbt and render ANSI colors in the Runner output panel")
+            }
         }
     }
 }

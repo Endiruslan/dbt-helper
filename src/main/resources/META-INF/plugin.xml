@@ -50,6 +50,42 @@ for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBra
     ]]></description>
 
     <change-notes><![CDATA[
+<h3>0.2.5</h3>
+<ul>
+  <li>Fixed: lineage/docs no longer show "waiting for data" after an IDE restart — the existing target/manifest.json is loaded on startup once indexing finishes, instead of requiring a manual Generate Docs every time</li>
+  <li><b>Colored dbt output</b> — new setting renders dbt's ANSI colors in the Runner output panel; pass --use-colors / --no-use-colors explicitly (enabled by default)</li>
+  <li><b>Build button</b> in the Runner tab — runs dbt build --select for the current model (runs + tests + snapshots + seeds), honors the full-refresh checkbox</li>
+  <li>Output soft-wraps to the panel width (no more horizontal scrollbar); Preview keeps wide tables intact with a horizontal scrollbar instead of wrapping</li>
+</ul>
+
+<h3>0.2.4</h3>
+<ul>
+  <li>Performance improvements in graph/docs refresh and lineage BFS. Thanks to @aabeds for the contribution.</li>
+</ul>
+
+<h3>0.2.3</h3>
+<ul>
+  <li>Fixed Cmd+Click on ref/source — now jumps to the model file</li>
+  <li>Updated hover documentation popup (no modifier needed)</li>
+  <li>Copy for Target DB / Paste as dbt Refs show a warning when the manifest is not loaded</li>
+</ul>
+
+<h3>0.2.2 — Lineage redesign + Docs sidebar</h3>
+<ul>
+  <li><b>Lineage redesign</b> — minimalist card-style nodes with type icon, name and schema; orthogonal edges with rounded corners that spread when several share a source/target</li>
+  <li><b>Docs sidebar</b> — Columns / Tests / SQL / Metadata side-by-side with the graph; collapsible description, tags and test count as pills, resizable handle</li>
+  <li><b>Click UX</b> — single click previews a model and dims everything outside its predecessors/successors; double click refocuses the graph and opens the source file; drag nodes to rearrange</li>
+  <li><b>Regenerate Docs</b> button in the lineage toolbar — pulses when the open model is missing from the manifest</li>
+  <li>Runner — Generate Docs renamed; new Preview button (was only available from the editor context menu)</li>
+  <li>Removed: standalone Docs tab (replaced by the sidebar inside Lineage), the "Show test nodes in lineage" setting, and the Cmd+Shift+R Preview shortcut</li>
+  <li>Compatibility: JetBrains IDEs 2025.1+ (no upper bound)</li>
+</ul>
+
+<h3>0.2.1</h3>
+<ul>
+  <li>DataSpell 2025.2 compatibility — bumped untilBuild to 261.* (build DS-261.x)</li>
+</ul>
+
 <h3>0.2.0</h3>
 <ul>
   <li>Run / Test / Compile buttons in Runner tab for the current model</li>

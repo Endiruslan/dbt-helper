@@ -179,6 +179,33 @@ class DbtCommandRunner(private val project: Project) {
         runCommand(command, File(projectRoot), listener)
     }
 
+    fun runBuild(modelName: String, fullRefresh: Boolean = false, listener: OutputListener) {
+        val dbt = findDbtExecutable()
+        val locator = DbtProjectLocator(project)
+        val projectRoot = locator.findProjectRoot()?.path
+
+        if (projectRoot == null) {
+            listener.onLine("ERROR: No dbt project found")
+            listener.onFinished(RunResult(-1, "", false))
+            return
+        }
+
+        val settings = DbtHelperSettings.getInstance(project)
+        val command = mutableListOf(dbt, "build", "--select", modelName)
+        if (fullRefresh) {
+            command.add("--full-refresh")
+        }
+        if (settings.state.activeTarget.isNotBlank()) {
+            command.addAll(listOf("--target", settings.state.activeTarget))
+        }
+
+        runCommand(command, File(projectRoot), listener) { result ->
+            if (result.success) {
+                ManifestService.getInstance(project).reparse()
+            }
+        }
+    }
+
     fun runDocsGenerate(listener: OutputListener) {
         val dbt = findDbtExecutable()
         val locator = DbtProjectLocator(project)
@@ -213,10 +240,24 @@ class DbtCommandRunner(private val project: Project) {
         Thread {
             val output = StringBuilder()
             try {
-                listener.onLine("$ ${command.joinToString(" ")}")
+                val settings = DbtHelperSettings.getInstance(project)
+                val colorsEnabled = settings.state.enableColoredOutput
+
+                // dbt 1.11 ignores NO_COLOR, so we must pass the global --use-colors /
+                // --no-use-colors flag explicitly. Inject it right after the executable
+                // (global flags must precede the subcommand), unless already present.
+                val finalCommand = command.toMutableList()
+                if (finalCommand.size > 1
+                    && !finalCommand.contains("--use-colors")
+                    && !finalCommand.contains("--no-use-colors")
+                ) {
+                    finalCommand.add(1, if (colorsEnabled) "--use-colors" else "--no-use-colors")
+                }
+
+                listener.onLine("$ ${finalCommand.joinToString(" ")}")
                 listener.onLine("")
 
-                val processBuilder = ProcessBuilder(command)
+                val processBuilder = ProcessBuilder(finalCommand)
                     .directory(workingDir)
                     .redirectErrorStream(true)
 
@@ -225,7 +266,12 @@ class DbtCommandRunner(private val project: Project) {
                 System.getenv("PATH")?.let { env["PATH"] = it }
                 System.getenv("HOME")?.let { env["HOME"] = it }
                 env["COLUMNS"] = "500"
-                env["NO_COLOR"] = "1"
+                if (colorsEnabled) {
+                    env.remove("NO_COLOR")
+                    env["FORCE_COLOR"] = "1"
+                } else {
+                    env["NO_COLOR"] = "1"
+                }
 
                 val process = processBuilder.start()
                 listener.onProcessStarted(process)

@@ -110,6 +110,7 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
                 when (type) {
                     "ready" -> {
                         isPageReady = true
+                        ensureManifestLoaded()
                         refreshGraph()
                         currentModelId?.let { pushDocsToSidebar(it) }
                     }
@@ -155,6 +156,7 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
                     // Apply IDE theme
                     applyCurrentTheme()
 
+                    ensureManifestLoaded()
                     resolveCurrentModel()
                     refreshGraph()
                     currentModelId?.let { pushDocsToSidebar(it) }
@@ -188,6 +190,22 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
 
     private fun readResource(path: String): String? {
         return javaClass.getResourceAsStream(path)?.use { it.bufferedReader().readText() }
+    }
+
+    /**
+     * Guarantees the manifest gets loaded for this (already-subscribed) tab.
+     *
+     * The startup parse publishes onManifestUpdated once; if that event fires before this tab
+     * subscribes, or the page becomes ready before the parse runs, the graph never renders and
+     * the view is stuck on "waiting for data" until a manual Generate Docs. Triggering a reparse
+     * here is deterministic: this tab is already subscribed (see init), so the resulting
+     * onManifestUpdated is delivered and the graph renders. No-op if already loaded or loading.
+     */
+    private fun ensureManifestLoaded() {
+        val service = ManifestService.getInstance(project)
+        if (service.getIndex() === ManifestIndex.EMPTY && !service.isLoading) {
+            service.reparse()
+        }
     }
 
     private fun resolveCurrentModel() {
