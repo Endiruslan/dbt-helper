@@ -12,7 +12,7 @@ import org.yaml.snakeyaml.Yaml
 class ProfilesParser(private val project: Project) {
 
     private val logger = Logger.getInstance(ProfilesParser::class.java)
-    private val locator = DbtProjectLocator(project)
+    private val locator = DbtProjectLocator.getInstance(project)
 
     @Volatile
     private var cachedConfig: ProfilesConfig? = null

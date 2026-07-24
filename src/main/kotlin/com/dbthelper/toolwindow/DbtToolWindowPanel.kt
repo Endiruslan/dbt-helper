@@ -122,7 +122,7 @@ class DbtToolWindowPanel(
 
     private fun getManifestDate(): String? {
         return try {
-            val locator = DbtProjectLocator(project)
+            val locator = DbtProjectLocator.getInstance(project)
             val dbtRoot = locator.findProjectRoot() ?: return null
             val manifestFile = dbtRoot.findChild("target")?.findChild("manifest.json") ?: return null
             val timestamp = manifestFile.timeStamp

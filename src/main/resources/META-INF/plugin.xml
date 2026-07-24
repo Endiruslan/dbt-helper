@@ -50,6 +50,13 @@ for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBra
     ]]></description>
 
     <change-notes><![CDATA[
+<h3>0.2.6</h3>
+<ul>
+  <li>Fixed: plugin broke on IDEs 2026.2 (build 262) — JCEF was split out of the core platform into a separate bundled plugin, so the Lineage/Docs browser failed with NoClassDefFoundError and the tool window came up empty. Now declares an optional dependency on the JCEF module, staying compatible with 2025.1+ where JCEF still ships in core.</li>
+  <li>Fixed: "Slow operations are prohibited on EDT" errors on 2026.2 — dbt project discovery no longer runs the filename index on the UI thread; roots are resolved once on a background thread and shared via a project service.</li>
+  <li>Fixed: bundled kotlinx-coroutines no longer ships with the plugin (now compile-only), avoiding a runtime clash with the platform's own coroutines on 2026.2.</li>
+</ul>
+
 <h3>0.2.5</h3>
 <ul>
   <li>Fixed: lineage/docs no longer show "waiting for data" after an IDE restart — the existing target/manifest.json is loaded on startup once indexing finishes, instead of requiring a manual Generate Docs every time</li>
@@ -116,11 +123,21 @@ for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBra
 
     <depends>com.intellij.modules.platform</depends>
 
+    <!-- JCEF (LineageTab/DocsTab browser). Up to 2025.2 JCEF lived in the core platform and was
+         always on the classpath. Since 2026.2 (build 262) it was split into the bundled
+         com.intellij.modules.jcef plugin, so without an explicit dependency com.intellij.ui.jcef.*
+         is missing and the tool window throws NoClassDefFoundError.
+         Declared OPTIONAL so a single build stays compatible across the whole range: on older IDEs
+         the plugin id is absent and this is skipped (JCEF comes from core); on 262+ it wires the
+         JCEF plugin's classes into our classloader. -->
+    <depends optional="true" config-file="dbt-helper-jcef.xml">com.intellij.modules.jcef</depends>
+
     <resource-bundle>messages.DbtHelperBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Project Services -->
         <projectService serviceImplementation="com.dbthelper.settings.DbtHelperSettings"/>
+        <projectService serviceImplementation="com.dbthelper.core.DbtProjectLocator"/>
         <projectService serviceImplementation="com.dbthelper.core.ManifestService"/>
         <projectService serviceImplementation="com.dbthelper.core.CatalogParser"/>
         <projectService serviceImplementation="com.dbthelper.core.ProfilesParser"/>

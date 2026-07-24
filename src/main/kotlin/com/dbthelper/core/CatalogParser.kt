@@ -15,7 +15,7 @@ class CatalogParser(private val project: Project) {
 
     private val logger = Logger.getInstance(CatalogParser::class.java)
     private val mapper = ObjectMapper().registerModule(KotlinModule.Builder().build())
-    private val locator = DbtProjectLocator(project)
+    private val locator = DbtProjectLocator.getInstance(project)
 
     @Volatile
     private var cachedFilePath: String? = null

@@ -21,7 +21,10 @@ dependencies {
     implementation(libs.jackson.databind)
     implementation(libs.jackson.module.kotlin)
     implementation(libs.snakeyaml)
-    implementation(libs.coroutines.core)
+    // Provided by the IntelliJ Platform at runtime — must NOT be bundled, or its
+    // kotlinx.coroutines conflicts with the platform's patched copy (on 2026.2 that
+    // surfaces as "NoClassDefFoundError: ...CoroutineExceptionHandlerImplKt").
+    compileOnly(libs.coroutines.core)
 
     intellijPlatform {
         val type = providers.gradleProperty("platformType").get()

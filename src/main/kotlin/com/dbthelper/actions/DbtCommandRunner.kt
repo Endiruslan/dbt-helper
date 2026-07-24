@@ -25,7 +25,7 @@ class DbtCommandRunner(private val project: Project) {
             return settings.state.dbtExecutablePath
         }
 
-        val locator = DbtProjectLocator(project)
+        val locator = DbtProjectLocator.getInstance(project)
         val projectRoot = locator.findProjectRoot()?.path
 
         // Auto-detection order
@@ -80,7 +80,7 @@ class DbtCommandRunner(private val project: Project) {
 
     fun runShow(modelName: String?, inlineSql: String?, listener: OutputListener) {
         val dbt = findDbtExecutable()
-        val locator = DbtProjectLocator(project)
+        val locator = DbtProjectLocator.getInstance(project)
         val projectRoot = locator.findProjectRoot()?.path
 
         if (projectRoot == null) {
@@ -114,7 +114,7 @@ class DbtCommandRunner(private val project: Project) {
 
     fun runModel(modelName: String, fullRefresh: Boolean = false, listener: OutputListener) {
         val dbt = findDbtExecutable()
-        val locator = DbtProjectLocator(project)
+        val locator = DbtProjectLocator.getInstance(project)
         val projectRoot = locator.findProjectRoot()?.path
 
         if (projectRoot == null) {
@@ -141,7 +141,7 @@ class DbtCommandRunner(private val project: Project) {
 
     fun runTest(modelName: String, listener: OutputListener) {
         val dbt = findDbtExecutable()
-        val locator = DbtProjectLocator(project)
+        val locator = DbtProjectLocator.getInstance(project)
         val projectRoot = locator.findProjectRoot()?.path
 
         if (projectRoot == null) {
@@ -161,7 +161,7 @@ class DbtCommandRunner(private val project: Project) {
 
     fun runCompile(modelName: String, listener: OutputListener) {
         val dbt = findDbtExecutable()
-        val locator = DbtProjectLocator(project)
+        val locator = DbtProjectLocator.getInstance(project)
         val projectRoot = locator.findProjectRoot()?.path
 
         if (projectRoot == null) {
@@ -181,7 +181,7 @@ class DbtCommandRunner(private val project: Project) {
 
     fun runBuild(modelName: String, fullRefresh: Boolean = false, listener: OutputListener) {
         val dbt = findDbtExecutable()
-        val locator = DbtProjectLocator(project)
+        val locator = DbtProjectLocator.getInstance(project)
         val projectRoot = locator.findProjectRoot()?.path
 
         if (projectRoot == null) {
@@ -208,7 +208,7 @@ class DbtCommandRunner(private val project: Project) {
 
     fun runDocsGenerate(listener: OutputListener) {
         val dbt = findDbtExecutable()
-        val locator = DbtProjectLocator(project)
+        val locator = DbtProjectLocator.getInstance(project)
         val projectRoot = locator.findProjectRoot()?.path
 
         if (projectRoot == null) {

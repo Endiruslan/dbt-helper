@@ -19,7 +19,7 @@ class ManifestService(private val project: Project) : Disposable {
 
     private val logger = Logger.getInstance(ManifestService::class.java)
     private val mapper = ObjectMapper().registerModule(KotlinModule.Builder().build())
-    private val locator = DbtProjectLocator(project)
+    private val locator = DbtProjectLocator.getInstance(project)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** Coalesces rapid [reparse] calls into at most one pending run after the current parse. */

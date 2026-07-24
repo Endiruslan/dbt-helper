@@ -1,0 +1,5 @@
+<!-- Optional dependency descriptor for com.intellij.modules.jcef (see plugin.xml).
+     No JCEF-specific extension points need registering here; the class-loader wiring the
+     optional <depends> provides is what matters. Kept intentionally empty. -->
+<idea-plugin>
+</idea-plugin>
