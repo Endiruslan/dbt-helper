@@ -50,6 +50,11 @@ for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBra
     ]]></description>
 
     <change-notes><![CDATA[
+<h3>0.2.7</h3>
+<ul>
+  <li>Stability fixes — no more spurious error reports on project close.</li>
+</ul>
+
 <h3>0.2.6</h3>
 <ul>
   <li>Fixed: plugin broke on IDEs 2026.2 (build 262) — JCEF was split out of the core platform into a separate bundled plugin, so the Lineage/Docs browser failed with NoClassDefFoundError and the tool window came up empty. Now declares an optional dependency on the JCEF module, staying compatible with 2025.1+ where JCEF still ships in core.</li>

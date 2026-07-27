@@ -27,8 +27,10 @@ class ManifestService(private val project: Project) : Disposable {
 
     init {
         scope.launch {
-            while (isActive) {
-                reparseSignal.receive()
+            // Iterating the channel completes normally once it is closed in dispose();
+            // receive() would instead throw ClosedReceiveChannelException and surface
+            // as an unhandled coroutine exception in the IDE log.
+            for (signal in reparseSignal) {
                 doParse()
             }
         }
@@ -341,8 +343,10 @@ class ManifestService(private val project: Project) : Disposable {
     }
 
     override fun dispose() {
-        reparseSignal.close()
+        // Cancel first so a suspended receive ends with CancellationException,
+        // which the coroutine machinery treats as normal completion.
         scope.cancel()
+        reparseSignal.close()
     }
 
     companion object {
