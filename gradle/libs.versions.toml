@@ -1,8 +1,11 @@
 [versions]
 kotlin = "2.0.20"
 intellijPlatform = "2.6.0"
-jackson = "2.17.2"
-snakeyaml = "2.3"
+# Hygiene bumps (neither 2.17.2 nor snakeyaml 2.3 had a reachable CVE in this codebase).
+# These are the latest lines as of the 2026-08 audit; confirm they resolve against Maven
+# Central at build time and move to the newest patch if a later one exists.
+jackson = "2.18.2"
+snakeyaml = "2.6"
 coroutines = "1.8.1"
 
 [libraries]

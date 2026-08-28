@@ -1,0 +1,20 @@
+# SHA-256 checksums for the vendored third-party JavaScript.
+#
+# Purpose: pin the exact bytes of the opaque minified libraries so any change to them is visible
+# in review. This records integrity, not upstream provenance — to prove these match the published
+# npm releases byte-for-byte, run the `npm pack` + hash comparison documented in the security
+# review (FINDINGS.md, "Bundled JS provenance").
+#
+# Verify (from this directory):
+#   sha256sum -c CHECKSUMS.sha256
+# On Windows PowerShell:
+#   Get-FileHash -Algorithm SHA256 cytoscape.min.js,dagre.min.js,cytoscape-dagre.js
+#
+# Claimed upstream versions: cytoscape.js 3.30.4, dagre 0.8.5, cytoscape-dagre 2.x.
+# SECURITY NOTE: dagre 0.8.5 is unmaintained and bundles an old lodash with known
+# prototype-pollution CVEs — see FINDINGS.md. renderGraph() drops reserved node ids as a
+# stopgap; the durable fix is migrating to @dagrejs/dagre 1.x.
+
+50fdaaf3f6f45774c7368f2ffb927246423679efc364d0ebe47cebcfa3eed1e8  cytoscape.min.js
+baed8315af2db75edef6d0fec8e08b7a28508e62d469b65e77c93b27e38bff67  dagre.min.js
+57fa1d16bcdb9a66792a597a2b80f88c0bd0daefcef595dd5a8821cf88262aea  cytoscape-dagre.js
