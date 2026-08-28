@@ -12,6 +12,8 @@ object DbtUtils {
         .replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#39;")
 
     fun friendlyName(uniqueId: String, index: ManifestIndex): String? {
         index.nodes[uniqueId]?.let { return it.name }
