@@ -6,12 +6,10 @@ data class ProfilesConfig(
     val targets: Map<String, TargetConfig>
 )
 
+// Only the fields the plugin actually uses are kept. The target selector needs names, and the
+// status label shows `type`; connection metadata (host/database/schema/port/threads) was read
+// but never consumed, so it is deliberately not projected out of profiles.yml.
 data class TargetConfig(
     val name: String,
-    val type: String,
-    val database: String? = null,
-    val schema: String? = null,
-    val host: String? = null,
-    val port: Int? = null,
-    val threads: Int? = null
+    val type: String
 )
