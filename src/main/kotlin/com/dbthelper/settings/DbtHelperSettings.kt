@@ -12,6 +12,10 @@ class DbtHelperSettings : PersistentStateComponent<DbtHelperSettings.State> {
 
     data class State(
         var dbtExecutablePath: String = "dbt",
+        // Whether a project-local dbt (<project>/.venv|venv|.env/bin/dbt) may be run:
+        // "ask" (default — prompt once and remember), "trusted", or "declined". Guards against a
+        // repository the user did not write shipping a malicious dbt that runs on Run/Preview.
+        var projectDbtTrust: String = "ask",
         var dbtProjectRootOverride: String = "",
         var activeTarget: String = "",
         var upstreamDepth: Int = 5,

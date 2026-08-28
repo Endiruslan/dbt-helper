@@ -3,8 +3,10 @@ package com.dbthelper.actions
 import com.dbthelper.core.DbtProjectLocator
 import com.dbthelper.core.ManifestService
 import com.dbthelper.settings.DbtHelperSettings
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import java.io.File
 
 class DbtCommandRunner(private val project: Project) {
@@ -28,23 +30,23 @@ class DbtCommandRunner(private val project: Project) {
         val locator = DbtProjectLocator.getInstance(project)
         val projectRoot = locator.findProjectRoot()?.path
 
-        // Auto-detection order
-        val candidates = mutableListOf<String>()
-
-        // Check project-local venvs first
+        // Project-local interpreters. A repository the user did not write could ship an executable
+        // at one of these paths, so it is only used with the user's consent — the first time one is
+        // found we ask, and remember the answer (Settings > Tools > dbt Helper to change it).
         if (projectRoot != null) {
-            candidates.add("$projectRoot/.venv/bin/dbt")
-            candidates.add("$projectRoot/venv/bin/dbt")
-            candidates.add("$projectRoot/.env/bin/dbt")
+            val projectLocal = listOf(
+                "$projectRoot/.venv/bin/dbt",
+                "$projectRoot/venv/bin/dbt",
+                "$projectRoot/.env/bin/dbt"
+            ).firstOrNull { File(it).canExecute() }
+            if (projectLocal != null && isProjectDbtTrusted(settings, projectLocal)) {
+                return projectLocal
+            }
         }
 
-        // Common global locations
+        // Common global locations (outside the project).
         val home = System.getProperty("user.home")
-        candidates.add("$home/.local/bin/dbt")
-        candidates.add("/usr/local/bin/dbt")
-        candidates.add("/opt/homebrew/bin/dbt")
-
-        for (candidate in candidates) {
+        for (candidate in listOf("$home/.local/bin/dbt", "/usr/local/bin/dbt", "/opt/homebrew/bin/dbt")) {
             if (File(candidate).canExecute()) return candidate
         }
 
@@ -58,6 +60,42 @@ class DbtCommandRunner(private val project: Project) {
         } catch (_: Exception) {}
 
         return "dbt"
+    }
+
+    /**
+     * Whether the project-local dbt at [path] may be run. Remembers the decision per project
+     * (Settings > Tools > dbt Helper): "trusted" runs it, "declined" falls back to PATH, and the
+     * default "ask" prompts once and stores the answer.
+     */
+    private fun isProjectDbtTrusted(settings: DbtHelperSettings, path: String): Boolean {
+        return when (settings.state.projectDbtTrust) {
+            "trusted" -> true
+            "declined" -> false
+            else -> {
+                val trusted = confirmProjectDbt(path)
+                settings.state.projectDbtTrust = if (trusted) "trusted" else "declined"
+                trusted
+            }
+        }
+    }
+
+    private fun confirmProjectDbt(path: String): Boolean {
+        var trusted = false
+        ApplicationManager.getApplication().invokeAndWait {
+            val answer = Messages.showYesNoDialog(
+                project,
+                "This project provides its own dbt executable:\n$path\n\n" +
+                    "Run it? Only do this for projects you trust — a repository could ship a " +
+                    "malicious \"dbt\". Choose \"Use PATH\" to run dbt from your PATH instead.\n\n" +
+                    "You can change this later in Settings > Tools > dbt Helper.",
+                "Run Project-Local dbt?",
+                "Trust This Project",
+                "Use PATH",
+                Messages.getWarningIcon()
+            )
+            trusted = (answer == Messages.YES)
+        }
+        return trusted
     }
 
     fun getVersion(): String? {
