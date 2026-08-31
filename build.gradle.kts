@@ -1,3 +1,5 @@
+import java.security.MessageDigest
+
 plugins {
     alias(libs.plugins.kotlin)
     alias(libs.plugins.intellijPlatform)
@@ -60,3 +62,21 @@ tasks {
         gradleVersion = "8.14.3"
     }
 }
+
+// Pin the vendored dagre bundle to the published @dagrejs/dagre@1.1.8 release, so the opaque
+// minified file cannot drift or be swapped unnoticed. Runs as part of `check`.
+// (dagre.min.js is marked `binary` in .gitattributes so its bytes stay identical to npm.)
+val verifyDagreBundle by tasks.registering {
+    val bundle = layout.projectDirectory.file("src/main/resources/js/dagre.min.js")
+    val expected = "c35b8d6f410ce7bdd302fc00cad27331184e52b2e738609e55ae3bbb4fb4849f"
+    inputs.file(bundle)
+    doLast {
+        val actual = MessageDigest.getInstance("SHA-256")
+            .digest(bundle.asFile.readBytes())
+            .joinToString("") { "%02x".format(it.toInt() and 0xFF) }
+        require(actual == expected) {
+            "dagre.min.js does not match @dagrejs/dagre@1.1.8:\n  expected $expected\n  actual   $actual"
+        }
+    }
+}
+tasks.named("check") { dependsOn(verifyDagreBundle) }
