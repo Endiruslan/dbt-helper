@@ -1,0 +1,4 @@
+# Vendored, pre-minified third-party bundle: treat as binary so line endings are never
+# converted. This keeps it byte-identical to the published @dagrejs/dagre npm release and
+# lets the `verifyDagreBundle` Gradle task check its SHA-256.
+src/main/resources/js/dagre.min.js binary
