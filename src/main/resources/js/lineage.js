@@ -585,10 +585,10 @@
     function showTooltip(pos, data) {
         var html = '<div class="tt-name">' + escapeHtml(data.label) + '</div>';
         html += '<div class="tt-detail">';
-        html += 'Type: ' + data.resourceType;
+        html += 'Type: ' + escapeHtml(data.resourceType);
         if (data.schema) html += '<br>Schema: ' + escapeHtml(data.schema);
         if (data.database) html += '<br>Database: ' + escapeHtml(data.database);
-        if (data.materialization) html += '<br>Materialization: ' + data.materialization;
+        if (data.materialization) html += '<br>Materialization: ' + escapeHtml(data.materialization);
         if (data.description) html += '<br>' + escapeHtml(data.description.substring(0, 150));
         html += '</div>';
         tooltipEl.innerHTML = html;
@@ -606,8 +606,13 @@
     }
 
     function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     // === Public API (called from Kotlin) ===
@@ -628,9 +633,28 @@
         else if (fn === 'showDocs') window.showDocs(data);
     };
 
+    // Reserved names that pollute Object.prototype when used as an object key. A manifest the
+    // user did not write controls dbt node ids, which become keys here (sourceCounts/targetCounts)
+    // and inside the bundled graph-layout library. Legitimate dbt unique_ids are dotted
+    // (`model.project.name`) and never equal these, so any id that does is malicious and dropped.
+    // NOTE: a plain-array membership check is deliberate — an object/Set literal keyed on
+    // '__proto__' would itself mis-handle that name.
+    var FORBIDDEN_NODE_IDS = ['__proto__', 'constructor', 'prototype'];
+    function isSafeNodeId(id) {
+        return typeof id === 'string' && FORBIDDEN_NODE_IDS.indexOf(id) === -1;
+    }
+
     window.renderGraph = function (jsonStr) {
         try {
             const graph = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+
+            // Prototype-pollution guard: drop any node/edge whose id is a reserved name before it
+            // reaches the layout engine (see isSafeNodeId above).
+            graph.nodes = (graph.nodes || []).filter(function (n) { return isSafeNodeId(n && n.id); });
+            graph.edges = (graph.edges || []).filter(function (e) {
+                return e && isSafeNodeId(e.fromNodeId) && isSafeNodeId(e.toNodeId);
+            });
+
             const elements = [];
 
             for (const node of graph.nodes) {

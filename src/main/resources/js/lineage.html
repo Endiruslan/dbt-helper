@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Lock the embedded view down. All scripts/styles are inlined into this document by
+         LineageTab before loadHTML, and the view never legitimately makes network requests,
+         so no external origins are allowed. connect-src 'none' + img-src data: close the
+         fetch/XHR/WebSocket/beacon and remote-image exfiltration channels; object/base/form
+         are disabled. Host-initiated executeJavaScript (Kotlin -> JS) and the CEF message-
+         router bridge are not governed by page CSP, so the plugin's own channels are unaffected. -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
     <title>dbt Lineage</title>
     <script src="cytoscape.min.js"></script>
     <script src="dagre.min.js"></script>
