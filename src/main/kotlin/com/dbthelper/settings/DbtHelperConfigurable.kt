@@ -22,6 +22,28 @@ class DbtHelperConfigurable(private val project: Project) : BoundConfigurable("d
                     .columns(COLUMNS_MEDIUM)
                     .comment("Path to dbt CLI binary, e.g. /usr/local/bin/dbt or just dbt if it's in PATH")
             }
+            row("Project-local dbt:") {
+                val labels = listOf("Ask each time", "Always trust this project", "Never (use PATH)")
+                comboBox(labels)
+                    .bindItem(
+                        {
+                            when (settings.state.projectDbtTrust) {
+                                "trusted" -> "Always trust this project"
+                                "declined" -> "Never (use PATH)"
+                                else -> "Ask each time"
+                            }
+                        },
+                        {
+                            settings.state.projectDbtTrust = when (it) {
+                                "Always trust this project" -> "trusted"
+                                "Never (use PATH)" -> "declined"
+                                else -> "ask"
+                            }
+                        }
+                    )
+                    .comment("Whether to run a dbt executable shipped inside the opened project " +
+                        "(.venv/venv/.env). Only trust projects you wrote or reviewed.")
+            }
         }
 
         group("Project") {

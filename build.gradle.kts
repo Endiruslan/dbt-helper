@@ -26,10 +26,14 @@ dependencies {
     // surfaces as "NoClassDefFoundError: ...CoroutineExceptionHandlerImplKt").
     compileOnly(libs.coroutines.core)
 
+    testImplementation("junit:junit:4.13.2")
+
     intellijPlatform {
         val type = providers.gradleProperty("platformType").get()
         val version = providers.gradleProperty("platformVersion").get()
         create(type, version)
+
+        testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 }
 
