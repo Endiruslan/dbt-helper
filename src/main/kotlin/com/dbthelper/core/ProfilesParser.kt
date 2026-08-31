@@ -2,6 +2,8 @@ package com.dbthelper.core
 
 import com.dbthelper.core.model.ProfilesConfig
 import com.dbthelper.core.model.TargetConfig
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -52,9 +54,25 @@ class ProfilesParser(private val project: Project) {
                 targets = targets
             ).also { cachedConfig = it }
         } catch (e: Exception) {
+            // Keep the full stack trace in the log for diagnosis...
             logger.warn("Failed to parse profiles.yml", e)
+            // ...but also tell the user, so a broken profiles.yml doesn't silently show up as an
+            // empty target selector with no explanation. The message is deliberately generic (no
+            // exception text) — a YAML error can quote the offending line, which may hold a secret.
+            notifyProfilesUnreadable()
             null
         }
+    }
+
+    private fun notifyProfilesUnreadable() {
+        NotificationGroupManager.getInstance()
+            .getNotificationGroup("dbt Helper")
+            .createNotification(
+                "dbt Helper: couldn't read profiles.yml",
+                "The dbt target list may be empty. See the IDE log (Help → Show Log) for the parse error.",
+                NotificationType.WARNING
+            )
+            .notify(project)
     }
 
     private fun readProfileFromProject(): String? {
