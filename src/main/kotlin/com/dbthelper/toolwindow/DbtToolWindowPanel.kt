@@ -124,7 +124,7 @@ class DbtToolWindowPanel(
         return try {
             val locator = DbtProjectLocator.getInstance(project)
             val dbtRoot = locator.findProjectRoot() ?: return null
-            val manifestFile = dbtRoot.findChild("target")?.findChild("manifest.json") ?: return null
+            val manifestFile = dbtRoot.findChild(locator.targetDirName)?.findChild("manifest.json") ?: return null
             val timestamp = manifestFile.timeStamp
             SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date(timestamp))
         } catch (_: Exception) {
