@@ -100,6 +100,13 @@ class DbtProjectLocator(private val project: Project) {
     }
 
     fun getProfilesFile(): File? {
+        // The IDE process does not inherit a shell's $DBT_PROFILES_DIR, so the setting comes first.
+        val override = DbtHelperSettings.getInstance(project).state.profilesDirOverride.trim()
+        if (override.isNotEmpty()) {
+            val file = File(override, "profiles.yml")
+            if (file.exists()) return file
+        }
+
         val envDir = System.getenv("DBT_PROFILES_DIR")
         if (envDir != null) {
             val file = File(envDir, "profiles.yml")
