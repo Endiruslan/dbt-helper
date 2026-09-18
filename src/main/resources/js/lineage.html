@@ -305,6 +305,11 @@
             flex: 1 1 auto;
             min-width: 0;
             white-space: pre-wrap;
+            /* Expanded is the default, so a long description would otherwise push the pills,
+               the tabs and the columns list past the bottom of the sidebar. */
+            max-height: 35vh;
+            overflow-y: auto;
+            overflow-wrap: anywhere;
         }
         .docs-description .desc-text.collapsed {
             white-space: nowrap;
