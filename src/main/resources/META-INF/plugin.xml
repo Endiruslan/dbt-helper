@@ -50,6 +50,11 @@ for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBra
     ]]></description>
 
     <change-notes><![CDATA[
+<h3>0.2.8</h3>
+<ul>
+  <li>Fixed: a long model description pushed the docs sidebar pills, tabs and columns off-screen. The description now scrolls on its own. Thanks @SylvainHazard!</li>
+</ul>
+
 <h3>0.2.7</h3>
 <ul>
   <li>Stability fixes — no more spurious error reports on project close.</li>
