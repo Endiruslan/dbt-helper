@@ -13,6 +13,7 @@ class DbtHelperSettings : PersistentStateComponent<DbtHelperSettings.State> {
     data class State(
         var dbtExecutablePath: String = "dbt",
         var dbtProjectRootOverride: String = "",
+        var targetDirName: String = "target",
         var activeTarget: String = "",
         var upstreamDepth: Int = 5,
         var downstreamDepth: Int = 5,

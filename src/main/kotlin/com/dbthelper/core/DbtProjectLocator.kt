@@ -86,9 +86,14 @@ class DbtProjectLocator(private val project: Project) {
         return roots.firstOrNull()
     }
 
+    /** Directory under a project root holding dbt's artifacts, "target" unless overridden. */
+    val targetDirName: String
+        get() = DbtHelperSettings.getInstance(project).state.targetDirName.trim()
+            .ifEmpty { DEFAULT_TARGET_DIR }
+
     fun getTargetDir(file: VirtualFile? = null): VirtualFile? {
         val root = findProjectRoot(file) ?: return null
-        return root.findChild("target")
+        return root.findChild(targetDirName)
     }
 
     fun getManifestFile(file: VirtualFile? = null): VirtualFile? {
@@ -133,6 +138,9 @@ class DbtProjectLocator(private val project: Project) {
     }
 
     companion object {
+        /** dbt's own default; overridable in settings for projects that build artifacts elsewhere. */
+        private const val DEFAULT_TARGET_DIR = "target"
+
         fun getInstance(project: Project): DbtProjectLocator = project.service()
     }
 }
