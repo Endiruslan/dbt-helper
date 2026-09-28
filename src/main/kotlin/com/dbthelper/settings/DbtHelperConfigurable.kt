@@ -31,6 +31,12 @@ class DbtHelperConfigurable(private val project: Project) : BoundConfigurable("d
                     .columns(COLUMNS_MEDIUM)
                     .comment("Absolute path to dbt project root. Leave empty to auto-detect from dbt_project.yml")
             }
+            row("Target directory:") {
+                textField()
+                    .bindText(settings.state::targetDirName)
+                    .columns(COLUMNS_MEDIUM)
+                    .comment("Directory holding manifest.json and catalog.json, relative to the project root. Default: target")
+            }
             row("Active target:") {
                 val targets = ProfilesParser.getInstance(project).getTargetNames()
                 if (targets.isNotEmpty()) {

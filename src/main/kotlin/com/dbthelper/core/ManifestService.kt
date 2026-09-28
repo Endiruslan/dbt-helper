@@ -1,6 +1,7 @@
 package com.dbthelper.core
 
 import com.dbthelper.core.model.*
+import com.dbthelper.settings.SettingsChangeListener
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -34,6 +35,13 @@ class ManifestService(private val project: Project) : Disposable {
                 doParse()
             }
         }
+        // The target directory is a setting, so a change there points at a different manifest.
+        project.messageBus.connect(this).subscribe(
+            SettingsChangeListener.TOPIC,
+            object : SettingsChangeListener {
+                override fun onSettingsChanged() = reparse()
+            }
+        )
     }
 
     @Volatile
@@ -91,7 +99,7 @@ class ManifestService(private val project: Project) : Disposable {
             }
 
             val allManifests = dbtRoots.mapNotNull { root ->
-                root.findChild("target")?.findChild("manifest.json")
+                root.findChild(locator.targetDirName)?.findChild("manifest.json")
             }
             if (allManifests.isEmpty()) {
                 cachedIndex = ManifestIndex.EMPTY
