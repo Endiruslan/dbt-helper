@@ -14,14 +14,14 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      # setup-java's own Gradle cache; gradle/actions@v6 moved caching under proprietary terms.
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
-
-      - uses: gradle/actions/setup-gradle@v4
+          cache: gradle
 
       - name: Check tag matches pluginVersion
         run: |

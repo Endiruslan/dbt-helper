@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.0.20"
-intellijPlatform = "2.6.0"
+intellijPlatform = "2.11.0"
 jackson = "2.17.2"
 snakeyaml = "2.3"
 coroutines = "1.8.1"

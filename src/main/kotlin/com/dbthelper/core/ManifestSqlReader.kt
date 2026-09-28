@@ -27,7 +27,7 @@ object ManifestSqlReader {
         if (parser.nextToken() != JsonToken.START_OBJECT) return null
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             if (parser.currentToken != JsonToken.FIELD_NAME) continue
-            when (parser.currentName) {
+            when (parser.currentName()) {
                 "nodes" -> {
                     parser.nextToken()
                     val sql = readFromNodesObject(parser, nodeId)
@@ -43,7 +43,7 @@ object ManifestSqlReader {
         if (parser.currentToken != JsonToken.START_OBJECT) return null
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             if (parser.currentToken != JsonToken.FIELD_NAME) continue
-            val id = parser.currentName ?: continue
+            val id = parser.currentName() ?: continue
             parser.nextToken()
             if (id == nodeId) {
                 return readSqlFields(parser)
@@ -62,7 +62,7 @@ object ManifestSqlReader {
         }
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             if (parser.currentToken != JsonToken.FIELD_NAME) continue
-            when (parser.currentName) {
+            when (parser.currentName()) {
                 "raw_code", "raw_sql" -> {
                     parser.nextToken()
                     if (raw == null && parser.currentToken == JsonToken.VALUE_STRING) {
