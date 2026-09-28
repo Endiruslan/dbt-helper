@@ -24,10 +24,6 @@ These PRs are closed without a detailed review:
 - **Batches of unrelated changes**, or a series of near-identical PRs.
 - **Changes you haven't run yourself.**
 
-If you think you found a security vulnerability, don't open a public PR or issue. Report it privately
-to the maintainer (contact on the [Marketplace page](https://plugins.jetbrains.com/plugin/31663-dbt-helper))
-with a concrete scenario showing how it can be exploited.
-
 ## Before you open a PR
 
 1. **Start from a real problem.** Link an issue, or describe a problem you actually ran into while
