@@ -93,7 +93,14 @@ class DbtProjectLocator(private val project: Project) {
 
     fun getTargetDir(file: VirtualFile? = null): VirtualFile? {
         val root = findProjectRoot(file) ?: return null
-        return root.findChild(targetDirName)
+        return targetDirOf(root)
+    }
+
+    /** dbt accepts a nested or absolute target-path, so this is not a plain findChild. */
+    fun targetDirOf(root: VirtualFile): VirtualFile? {
+        val dir = targetDirName
+        return if (File(dir).isAbsolute) LocalFileSystem.getInstance().findFileByPath(dir)
+        else root.findFileByRelativePath(dir)
     }
 
     fun getManifestFile(file: VirtualFile? = null): VirtualFile? {
@@ -117,6 +124,9 @@ class DbtProjectLocator(private val project: Project) {
             val file = File(envDir, "profiles.yml")
             if (file.exists()) return file
         }
+
+        // dbt >= 1.3 checks the project directory before ~/.dbt
+        findProjectRoot()?.findChild("profiles.yml")?.let { return File(it.path) }
 
         val homeDir = System.getProperty("user.home")
         val file = File(homeDir, ".dbt/profiles.yml")

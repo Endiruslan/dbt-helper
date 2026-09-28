@@ -41,7 +41,7 @@ class DbtHelperConfigurable(private val project: Project) : BoundConfigurable("d
                 textField()
                     .bindText(settings.state::profilesDirOverride)
                     .columns(COLUMNS_MEDIUM)
-                    .comment("Directory holding profiles.yml. Leave empty to use \$DBT_PROFILES_DIR, then ~/.dbt")
+                    .comment("Directory holding profiles.yml. Leave empty to use \$DBT_PROFILES_DIR, then the project root, then ~/.dbt")
             }
             row("Active target:") {
                 val targets = ProfilesParser.getInstance(project).getTargetNames()

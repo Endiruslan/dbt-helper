@@ -266,6 +266,10 @@ class DbtCommandRunner(private val project: Project) {
                 System.getenv("PATH")?.let { env["PATH"] = it }
                 System.getenv("HOME")?.let { env["HOME"] = it }
                 env["COLUMNS"] = "500"
+                // Keep dbt reading/writing the same profiles and artifacts the plugin reads.
+                settings.state.profilesDirOverride.trim().ifEmpty { null }?.let { env["DBT_PROFILES_DIR"] = it }
+                settings.state.targetDirName.trim().takeIf { it.isNotEmpty() && it != "target" }
+                    ?.let { env["DBT_TARGET_PATH"] = it }
                 if (colorsEnabled) {
                     env.remove("NO_COLOR")
                     env["FORCE_COLOR"] = "1"

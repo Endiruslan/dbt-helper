@@ -26,6 +26,10 @@ class ManifestService(private val project: Project) : Disposable {
     /** Coalesces rapid [reparse] calls into at most one pending run after the current parse. */
     private val reparseSignal = Channel<Unit>(Channel.CONFLATED)
 
+    /** Target dir the current index was read from; a settings change reparses only if it moved. */
+    @Volatile
+    private var parsedTargetDir: String? = null
+
     init {
         scope.launch {
             // Iterating the channel completes normally once it is closed in dispose();
@@ -36,10 +40,13 @@ class ManifestService(private val project: Project) : Disposable {
             }
         }
         // The target directory is a setting, so a change there points at a different manifest.
+        // Any other setting (e.g. the Runner's target combo) must not trigger a full reparse.
         project.messageBus.connect(this).subscribe(
             SettingsChangeListener.TOPIC,
             object : SettingsChangeListener {
-                override fun onSettingsChanged() = reparse()
+                override fun onSettingsChanged() {
+                    if (locator.targetDirName != parsedTargetDir) reparse()
+                }
             }
         )
     }
@@ -87,6 +94,7 @@ class ManifestService(private val project: Project) : Disposable {
         yield()
         isLoading = true
         lastError = null
+        parsedTargetDir = locator.targetDirName
         try {
             // Parse all dbt projects found in the workspace
             val dbtRoots = locator.findAllDbtRoots()
@@ -99,7 +107,7 @@ class ManifestService(private val project: Project) : Disposable {
             }
 
             val allManifests = dbtRoots.mapNotNull { root ->
-                root.findChild(locator.targetDirName)?.findChild("manifest.json")
+                locator.targetDirOf(root)?.findChild("manifest.json")
             }
             if (allManifests.isEmpty()) {
                 cachedIndex = ManifestIndex.EMPTY

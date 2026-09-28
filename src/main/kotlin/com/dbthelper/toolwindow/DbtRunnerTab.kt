@@ -192,7 +192,8 @@ class DbtRunnerTab(
         profiles.invalidateCache()
         val targets = profiles.getTargetNames()
 
-        val current = targetCombo.selectedItem as? String
+        // Settings is the source of truth, so the combo also follows "Active target" in Settings.
+        val current = settings.state.activeTarget.ifBlank { targetCombo.selectedItem as? String }
         targetCombo.removeActionListeners()
         targetCombo.removeAllItems()
         for (t in targets) {
