@@ -2,6 +2,8 @@ package com.dbthelper.core
 
 import com.dbthelper.core.model.ProfilesConfig
 import com.dbthelper.core.model.TargetConfig
+import com.dbthelper.settings.SettingsChangeListener
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -9,13 +11,25 @@ import com.intellij.openapi.project.Project
 import org.yaml.snakeyaml.Yaml
 
 @Service(Service.Level.PROJECT)
-class ProfilesParser(private val project: Project) {
+class ProfilesParser(private val project: Project) : Disposable {
 
     private val logger = Logger.getInstance(ProfilesParser::class.java)
     private val locator = DbtProjectLocator.getInstance(project)
 
     @Volatile
     private var cachedConfig: ProfilesConfig? = null
+
+    init {
+        // The profiles directory is a setting, so a change there points at a different file.
+        project.messageBus.connect(this).subscribe(
+            SettingsChangeListener.TOPIC,
+            object : SettingsChangeListener {
+                override fun onSettingsChanged() = invalidateCache()
+            }
+        )
+    }
+
+    override fun dispose() = Unit
 
     fun parse(): ProfilesConfig? {
         cachedConfig?.let { return it }

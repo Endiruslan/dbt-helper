@@ -145,6 +145,14 @@ class DbtRunnerTab(
                 }
             })
 
+        // The target list comes from profiles.yml, and settings decide which file that is.
+        connection.subscribe(com.dbthelper.settings.SettingsChangeListener.TOPIC,
+            object : com.dbthelper.settings.SettingsChangeListener {
+                override fun onSettingsChanged() {
+                    ApplicationManager.getApplication().invokeLater { refreshTargets() }
+                }
+            })
+
         // Initial check
         updateFullRefreshVisibility()
         generateButton.addActionListener { runDocsGenerate() }

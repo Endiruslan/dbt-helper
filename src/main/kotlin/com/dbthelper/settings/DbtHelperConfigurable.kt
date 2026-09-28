@@ -37,6 +37,12 @@ class DbtHelperConfigurable(private val project: Project) : BoundConfigurable("d
                     .columns(COLUMNS_MEDIUM)
                     .comment("Directory holding manifest.json and catalog.json, relative to the project root. Default: target")
             }
+            row("Profiles directory:") {
+                textField()
+                    .bindText(settings.state::profilesDirOverride)
+                    .columns(COLUMNS_MEDIUM)
+                    .comment("Directory holding profiles.yml. Leave empty to use \$DBT_PROFILES_DIR, then ~/.dbt")
+            }
             row("Active target:") {
                 val targets = ProfilesParser.getInstance(project).getTargetNames()
                 if (targets.isNotEmpty()) {
