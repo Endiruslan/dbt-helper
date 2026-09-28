@@ -8,6 +8,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import org.yaml.snakeyaml.Yaml
 
 @Service(Service.Level.PROJECT)
@@ -34,13 +35,16 @@ class ProfilesParser(private val project: Project) : Disposable {
     fun parse(): ProfilesConfig? {
         cachedConfig?.let { return it }
 
+        // Roots are resolved in the background (not on the EDT). Without the root we would read
+        // the wrong profiles.yml and guess the wrong profile, so report nothing and cache nothing.
+        val root = locator.findProjectRoot() ?: return null
         val file = locator.getProfilesFile() ?: return null
         return try {
             val yaml = Yaml()
             val data = file.inputStream().use { yaml.load<Map<String, Any>>(it) }
 
             // Read profile name from dbt_project.yml
-            val profileName = readProfileFromProject() ?: data.keys.firstOrNull { it != "config" } ?: return null
+            val profileName = readProfileFromProject(root) ?: data.keys.firstOrNull { it != "config" } ?: return null
 
             @Suppress("UNCHECKED_CAST")
             val profileData = data[profileName] as? Map<String, Any> ?: return null
@@ -71,9 +75,8 @@ class ProfilesParser(private val project: Project) : Disposable {
         }
     }
 
-    private fun readProfileFromProject(): String? {
+    private fun readProfileFromProject(root: VirtualFile): String? {
         return try {
-            val root = locator.findProjectRoot() ?: return null
             val dbtProjectFile = root.findChild("dbt_project.yml") ?: return null
             val yaml = Yaml()
             @Suppress("UNCHECKED_CAST")

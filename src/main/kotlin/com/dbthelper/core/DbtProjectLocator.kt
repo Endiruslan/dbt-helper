@@ -97,11 +97,11 @@ class DbtProjectLocator(private val project: Project) {
     }
 
     /** dbt accepts a nested or absolute target-path, so this is not a plain findChild. */
-    fun targetDirOf(root: VirtualFile): VirtualFile? {
-        val dir = targetDirName
-        return if (File(dir).isAbsolute) LocalFileSystem.getInstance().findFileByPath(dir)
-        else root.findFileByRelativePath(dir)
-    }
+    fun targetDirPath(root: VirtualFile): String =
+        targetDirName.let { if (File(it).isAbsolute) it else "${root.path}/$it" }
+
+    fun targetDirOf(root: VirtualFile): VirtualFile? =
+        LocalFileSystem.getInstance().findFileByPath(targetDirPath(root))
 
     fun getManifestFile(file: VirtualFile? = null): VirtualFile? {
         return getTargetDir(file)?.findChild("manifest.json")

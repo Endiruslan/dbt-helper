@@ -10,6 +10,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import java.util.Collections
 import kotlinx.coroutines.*
@@ -103,17 +104,22 @@ class ManifestService(private val project: Project) : Disposable {
                 manifestFile = null
                 sqlCache.clear()
                 lastError = "No dbt projects found"
+                // Views must drop the previous manifest (e.g. target dir changed in settings).
+                project.messageBus.syncPublisher(ManifestUpdateListener.TOPIC).onManifestUpdated(ManifestIndex.EMPTY)
                 return
             }
 
             val allManifests = dbtRoots.mapNotNull { root ->
-                locator.targetDirOf(root)?.findChild("manifest.json")
+                // Refresh: dbt may have just created the target dir, which VFS has not seen yet.
+                LocalFileSystem.getInstance().refreshAndFindFileByPath("${locator.targetDirPath(root)}/manifest.json")
             }
             if (allManifests.isEmpty()) {
                 cachedIndex = ManifestIndex.EMPTY
                 manifestFile = null
                 sqlCache.clear()
                 lastError = "manifest.json not found"
+                // Views must drop the previous manifest (e.g. target dir changed in settings).
+                project.messageBus.syncPublisher(ManifestUpdateListener.TOPIC).onManifestUpdated(ManifestIndex.EMPTY)
                 return
             }
 

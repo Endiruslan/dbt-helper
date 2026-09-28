@@ -2,6 +2,8 @@ package com.dbthelper.toolwindow
 
 import com.dbthelper.actions.DbtCommandRunner
 import com.dbthelper.core.ManifestService
+import com.dbthelper.core.ManifestUpdateListener
+import com.dbthelper.core.model.ManifestIndex
 import com.dbthelper.core.model.DbtNode
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -108,7 +110,7 @@ class DbtRunnerTab(
     init {
         Disposer.register(parentDisposable, this)
 
-        initTargetCombo()
+        refreshTargets()
 
         val toolbar = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
             add(JLabel("Target:"))
@@ -145,6 +147,13 @@ class DbtRunnerTab(
                 }
             })
 
+        // On startup the dbt root may not be known yet (so no targets); a parsed manifest means it is.
+        connection.subscribe(ManifestUpdateListener.TOPIC, object : ManifestUpdateListener {
+            override fun onManifestUpdated(index: ManifestIndex) {
+                ApplicationManager.getApplication().invokeLater { refreshTargets() }
+            }
+        })
+
         // The target list comes from profiles.yml, and settings decide which file that is.
         connection.subscribe(com.dbthelper.settings.SettingsChangeListener.TOPIC,
             object : com.dbthelper.settings.SettingsChangeListener {
@@ -160,46 +169,25 @@ class DbtRunnerTab(
         stopButton.addActionListener { stopCurrentCommand() }
     }
 
-    private fun initTargetCombo() {
-        val settings = DbtHelperSettings.getInstance(project)
-        val profiles = ProfilesParser.getInstance(project)
-        val targets = profiles.getTargetNames()
-        val defaultTarget = profiles.getDefaultTarget()
-
-        targetCombo.removeAllItems()
-        for (t in targets) {
-            targetCombo.addItem(t)
-        }
-
-        // Select current active target or default
-        val current = settings.state.activeTarget.ifBlank { defaultTarget ?: "" }
-        if (current.isNotBlank() && targets.contains(current)) {
-            targetCombo.selectedItem = current
-        }
-
-        targetCombo.addActionListener {
-            val selected = targetCombo.selectedItem as? String ?: return@addActionListener
-            settings.state.activeTarget = selected
-            project.messageBus.syncPublisher(
-                com.dbthelper.settings.SettingsChangeListener.TOPIC
-            ).onSettingsChanged()
-        }
-    }
-
     fun refreshTargets() {
         val settings = DbtHelperSettings.getInstance(project)
         val profiles = ProfilesParser.getInstance(project)
         profiles.invalidateCache()
         val targets = profiles.getTargetNames()
 
+        // A different profiles.yml may not have the saved target: fall back to the profile default
+        // rather than passing a --target dbt will reject. Empty targets = unparsable file, keep it.
+        if (targets.isNotEmpty() && settings.state.activeTarget !in targets) {
+            settings.state.activeTarget = ""
+        }
         // Settings is the source of truth, so the combo also follows "Active target" in Settings.
-        val current = settings.state.activeTarget.ifBlank { targetCombo.selectedItem as? String }
+        val current = settings.state.activeTarget.ifBlank { profiles.getDefaultTarget() ?: "" }
         targetCombo.removeActionListeners()
         targetCombo.removeAllItems()
         for (t in targets) {
             targetCombo.addItem(t)
         }
-        if (current != null && targets.contains(current)) {
+        if (targets.contains(current)) {
             targetCombo.selectedItem = current
         }
 
