@@ -2,6 +2,7 @@
 
 [![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/31663-dbt-helper?label=JetBrains%20Marketplace)](https://plugins.jetbrains.com/plugin/31663-dbt-helper)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/31663-dbt-helper)](https://plugins.jetbrains.com/plugin/31663-dbt-helper)
+[![Rating](https://img.shields.io/jetbrains/plugin/r/rating/31663-dbt-helper)](https://plugins.jetbrains.com/plugin/31663-dbt-helper/reviews)
 
 A JetBrains IDE plugin that brings **lineage visualization**, **code intelligence**, and **command runner** for [dbt](https://www.getdbt.com/) projects.
 
@@ -92,6 +93,12 @@ To run a development instance:
 2. Publish a GitHub release tagged `v<pluginVersion>`
 
 The [Release workflow](.github/workflows/release.yml) then uploads the plugin to JetBrains Marketplace (needs the `PUBLISH_TOKEN` repo secret) and attaches the ZIP to the release.
+
+---
+
+## Contributing
+
+Pull requests are welcome, including AI-assisted ones. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first: describe the problem, and test the change locally in a real IDE.
 
 ---
 
