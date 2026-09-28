@@ -50,6 +50,16 @@ for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBra
     ]]></description>
 
     <change-notes><![CDATA[
+<h3>0.2.9</h3>
+<ul>
+  <li>New: <b>Target directory</b> setting for projects that build artifacts outside <code>target/</code> (<code>--target-path</code>, <code>DBT_TARGET_PATH</code>). Thanks @SylvainHazard!</li>
+  <li>New: <b>Profiles directory</b> setting for <code>profiles.yml</code>. Thanks @SylvainHazard!</li>
+  <li>dbt commands started from the plugin now use the same target and profiles directories that the plugin reads.</li>
+  <li>Fixed: <code>ref()</code>, <code>source()</code> and macro completion missed items on large projects. Thanks @SylvainHazard!</li>
+  <li>Fixed: <code>profiles.yml</code> in the project root is now picked up, as dbt 1.3+ does.</li>
+  <li>Fixed: on startup the Runner could list targets from an unrelated profile in <code>~/.dbt</code>.</li>
+</ul>
+
 <h3>0.2.8</h3>
 <ul>
   <li>Fixed: a long model description pushed the docs sidebar pills, tabs and columns off-screen. The description now scrolls on its own. Thanks @SylvainHazard!</li>
