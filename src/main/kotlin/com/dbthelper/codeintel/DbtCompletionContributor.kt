@@ -12,7 +12,11 @@ import com.intellij.util.ProcessingContext
 class DbtCompletionContributor : CompletionContributor() {
 
     companion object {
-        /** Avoid building thousands of lookup elements on large projects. */
+        /**
+         * Avoid building thousands of lookup elements on large projects. The cap makes the result
+         * prefix-dependent, so both call sites ask the platform to restart completion when the
+         * prefix changes rather than let it filter a stale first batch.
+         */
         private const val MAX_LOOKUP_ITEMS = 100
     }
 
@@ -48,6 +52,7 @@ class DbtCompletionContributor : CompletionContributor() {
     private fun completeRef(prefix: String, index: ManifestIndex, result: CompletionResultSet) {
         val prefixMatcher = CamelHumpMatcher(prefix, true)
         val resultSet = result.withPrefixMatcher(prefix)
+        resultSet.restartCompletionOnAnyPrefixChange()
         val matching = index.nodes.values.asSequence()
             .filter { it.resourceType != "test" }
             .filter { node ->
@@ -119,6 +124,7 @@ class DbtCompletionContributor : CompletionContributor() {
     ) {
         val prefixMatcher = CamelHumpMatcher(prefix, true)
         val resultSet = result.withPrefixMatcher(prefix)
+        resultSet.restartCompletionOnAnyPrefixChange()
         for (item in items
             .filter { prefixMatcher.prefixMatches(lookupString(it)) }
             .sortedBy(lookupString)
