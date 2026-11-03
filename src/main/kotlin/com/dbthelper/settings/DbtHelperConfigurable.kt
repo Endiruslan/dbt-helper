@@ -101,6 +101,17 @@ class DbtHelperConfigurable(private val project: Project) : BoundConfigurable("d
                     .bindIntValue(settings.state::previewRowLimit)
                     .comment("Maximum number of rows returned by dbt show (preview)")
             }
+            row("Data source for Run Selection:") {
+                textField()
+                    .bindText(settings.state::executionDataSource)
+                    .columns(COLUMNS_MEDIUM)
+                    .comment("Database Tools data source that Run Selection on Target DB uses when the file isn't attached to one. Leave empty to be asked")
+            }
+            row {
+                checkBox("Precompile models")
+                    .bindSelected(settings.state::precompileOnSave)
+                    .comment("Compile a model in the background when it is opened or saved and uses macros, so Run Selection on Target DB doesn't wait for dbt. Tip: autosave on idle (Settings | Appearance & Behavior | System Settings) makes it follow your edits")
+            }
         }
 
         group("Behavior") {

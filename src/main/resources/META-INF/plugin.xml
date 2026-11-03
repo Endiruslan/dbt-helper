@@ -152,6 +152,10 @@ for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBra
          JCEF plugin's classes into our classloader. -->
     <depends optional="true" config-file="dbt-helper-jcef.xml">com.intellij.modules.jcef</depends>
 
+    <!-- Database Tools (PyCharm Pro, IDEA Ultimate, DataGrip): Run Selection on Target DB. Optional, so
+         the rest of the plugin still loads in IDEs without it, the action is simply not registered. -->
+    <depends optional="true" config-file="dbt-helper-database.xml">com.intellij.database</depends>
+
     <resource-bundle>messages.DbtHelperBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">

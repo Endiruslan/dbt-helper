@@ -62,6 +62,20 @@ class CopyWithRefsReplacedAction : AnAction("Copy for Target DB") {
         private val JINJA_THIS = Regex("""\{\{-?\s*this\s*-?\}\}""")
 
         fun replaceRefsWithRelations(text: String, index: ManifestIndex, currentModelId: String? = null): String {
+            var result = resolveRelations(text, index, currentModelId)
+
+            // Comment out remaining Jinja blocks: {% ... %} and {{ config(...) }} → /* ... */
+            val jinjaBlock = Regex("""\{[%{]-?.*?-?[%}]\}""", RegexOption.DOT_MATCHES_ALL)
+            result = jinjaBlock.replace(result) { "/* ${it.value} */" }
+
+            return result.trim()
+        }
+
+        /**
+         * Replaces {{ this }}, {{ source() }} and {{ ref() }} with database.schema.table from the manifest.
+         * Calls it can't resolve (unknown model, no current model for this) are left as they are.
+         */
+        fun resolveRelations(text: String, index: ManifestIndex, currentModelId: String? = null): String {
             var result = text
 
             // Replace {{ this }} → database.schema.table of current model
@@ -98,11 +112,7 @@ class CopyWithRefsReplacedAction : AnAction("Copy for Target DB") {
                 }
             }
 
-            // Comment out remaining Jinja blocks: {% ... %} and {{ config(...) }} → /* ... */
-            val jinjaBlock = Regex("""\{[%{]-?.*?-?[%}]\}""", RegexOption.DOT_MATCHES_ALL)
-            result = jinjaBlock.replace(result) { "/* ${it.value} */" }
-
-            return result.trim()
+            return result
         }
 
         private fun buildRelationName(database: String?, schema: String?, table: String): String {
