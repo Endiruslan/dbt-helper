@@ -129,7 +129,8 @@ class DbtCommandRunner(private val project: Project) {
 
         val settings = DbtHelperSettings.getInstance(project)
         // --no-use-colors: the output is parsed, not shown.
-        val command = mutableListOf(dbt, "--no-use-colors", "compile", "--select", modelName, "--output", "json", "--quiet")
+        // --no-write-json: rewriting manifest.json would reload the manifest and drop ModelCompiler's cache.
+        val command = mutableListOf(dbt, "--no-use-colors", "compile", "--no-write-json", "--select", modelName, "--output", "json", "--quiet")
         if (settings.state.activeTarget.isNotBlank()) {
             command.addAll(listOf("--target", settings.state.activeTarget))
         }
