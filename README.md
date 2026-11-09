@@ -18,6 +18,20 @@ Works with **IntelliJ IDEA**, **PyCharm**, **DataSpell**, and other JetBrains ID
 - **Runner** — run, test, compile, preview, and regenerate docs without leaving the IDE. Target selector and live output log.
 - **Copy & paste helpers** — copy SQL with refs resolved to `db.schema.table`, or paste SQL with table names converted back into `ref()` / `source()` calls.
 
+<table>
+  <tr>
+    <td width="112" align="center">
+      <a href="https://mxds.app"><img src=".github/assets/mxds-logo.png" width="80" height="80" alt="mxds logo"></a>
+    </td>
+    <td>
+      <strong><a href="https://mxds.app">mxds</a> — the agentic analytics IDE for macOS</strong>, from the author of dbt Helper.<br>
+      SQL editor, Jupyter notebooks, charts, and dbt previews, builds and lineage in one native Rust app. Claude Code or Codex work in its built-in terminal and can open tabs, run queries and build charts for you.<br><br>
+      <a href="https://mxds.app/download"><img src="https://img.shields.io/badge/Download_for_Mac-0A0A0A?style=for-the-badge&logo=apple&logoColor=white" alt="Download for Mac"></a>
+      &nbsp;
+    </td>
+  </tr>
+</table>
+
 ---
 
 ## Installation
