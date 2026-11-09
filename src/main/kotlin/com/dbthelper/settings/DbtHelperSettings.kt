@@ -24,6 +24,8 @@ class DbtHelperSettings : PersistentStateComponent<DbtHelperSettings.State> {
         var layoutDirection: String = "LR",
         var showCompiledCode: Boolean = false,
         var previewRowLimit: Int = 10,
+        var executionDataSource: String = "",
+        var precompileOnSave: Boolean = false,
         var enableSystemNotifications: Boolean = true,
         var enableColoredOutput: Boolean = true
     )

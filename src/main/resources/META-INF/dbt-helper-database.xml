@@ -1,0 +1,23 @@
+<!-- Optional dependency descriptor for com.intellij.database (see plugin.xml): Database Tools ships with
+     PyCharm Professional, IntelliJ IDEA Ultimate and DataGrip. The action runs SQL on a data source and
+     shows the IDE's result grid, so it is only registered where those classes exist. -->
+<idea-plugin>
+    <actions>
+        <action id="dbtHelper.RunSelectionOnTarget"
+                class="com.dbthelper.actions.RunSelectionOnTargetAction"
+                text="Run Selection on Target DB"
+                description="Run the CTE under the caret (or the selection) with the CTEs it reads, refs resolved, in the result grid">
+            <!-- No default shortcut: every combination tried clashed with an editor action in some keymap
+                 (Ctrl/Cmd+Shift+Enter is Complete Current Statement or Start New Line Before).
+                 Bind one in Settings | Keymap. -->
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="dbtHelper.CopyForTarget"/>
+        </action>
+    </actions>
+
+    <projectListeners>
+        <listener class="com.dbthelper.listeners.PrecompileOnSaveListener"
+                  topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener"/>
+        <listener class="com.dbthelper.listeners.PrecompileOnOpenListener"
+                  topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+    </projectListeners>
+</idea-plugin>

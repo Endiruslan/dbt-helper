@@ -30,6 +30,9 @@ dependencies {
         val type = providers.gradleProperty("platformType").get()
         val version = providers.gradleProperty("platformVersion").get()
         create(type, version)
+        // Database Tools (PyCharm Pro, IntelliJ IDEA Ultimate, DataGrip): only needed to compile
+        // RunSelectionOnTargetAction; plugin.xml declares it optional, so IDEs without it still load.
+        bundledPlugin("com.intellij.database")
     }
 }
 

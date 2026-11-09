@@ -112,6 +112,32 @@ class DbtCommandRunner(private val project: Project) {
         runCommand(command, File(projectRoot), listener)
     }
 
+    /**
+     * Compiles one model and prints it as JSON (`{"node": ..., "compiled": "..."}`), so the result
+     * can be parsed out of whatever the dbt executable logs around it.
+     */
+    fun runCompileJson(modelName: String, listener: OutputListener) {
+        val dbt = findDbtExecutable()
+        val locator = DbtProjectLocator.getInstance(project)
+        val projectRoot = locator.findProjectRoot()?.path
+
+        if (projectRoot == null) {
+            listener.onLine("ERROR: No dbt project found")
+            listener.onFinished(RunResult(-1, "", false))
+            return
+        }
+
+        val settings = DbtHelperSettings.getInstance(project)
+        // --no-use-colors: the output is parsed, not shown.
+        // --no-write-json: rewriting manifest.json would reload the manifest and drop ModelCompiler's cache.
+        val command = mutableListOf(dbt, "--no-use-colors", "compile", "--no-write-json", "--select", modelName, "--output", "json", "--quiet")
+        if (settings.state.activeTarget.isNotBlank()) {
+            command.addAll(listOf("--target", settings.state.activeTarget))
+        }
+
+        runCommand(command, File(projectRoot), listener)
+    }
+
     fun runModel(modelName: String, fullRefresh: Boolean = false, listener: OutputListener) {
         val dbt = findDbtExecutable()
         val locator = DbtProjectLocator.getInstance(project)
