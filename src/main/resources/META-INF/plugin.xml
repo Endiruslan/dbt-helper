@@ -50,6 +50,12 @@ for <a href="https://www.getdbt.com/">dbt</a> projects directly into your JetBra
     ]]></description>
 
     <change-notes><![CDATA[
+<h3>0.2.10</h3>
+<ul>
+  <li>New: <b>Run Selection on Target DB</b> runs the CTE under the caret or the selected SQL, with the CTEs it reads, on a Database Tools data source and shows the rows in the IDE's result grid. <code>ref()</code> and <code>source()</code> resolve from the manifest, and models with other Jinja are compiled with dbt. Requires Database Tools. Thanks @SylvainHazard!</li>
+  <li>New: optional <b>Precompile models</b> setting compiles a model when it is opened or saved, so a run usually doesn't wait for dbt. Thanks @SylvainHazard!</li>
+</ul>
+
 <h3>0.2.9</h3>
 <ul>
   <li>New: <b>Target directory</b> setting for projects that build artifacts outside <code>target/</code> (<code>--target-path</code>, <code>DBT_TARGET_PATH</code>). Thanks @SylvainHazard!</li>
